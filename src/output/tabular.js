@@ -119,7 +119,12 @@ export function formatSummaryLine(stats, sccData, elapsed, options = {}) {
 
   const parts = [];
   if (stats && stats.totals.files > 0) {
-    parts.push(`${stats.totals.files} document${stats.totals.files !== 1 ? 's' : ''}`);
+    let docPart = `${stats.totals.files} document${stats.totals.files !== 1 ? 's' : ''}`;
+    const details = [];
+    if (stats.totals.words > 0) details.push(`${formatNumber(stats.totals.words)} word${stats.totals.words !== 1 ? 's' : ''}`);
+    if (stats.totals.pages > 0) details.push(`${formatNumber(stats.totals.pages)} page${stats.totals.pages !== 1 ? 's' : ''}`);
+    if (details.length > 0) docPart += ` (${details.join(', ')})`;
+    parts.push(docPart);
   }
   if (sccData && sccData.length > 0) {
     const totalCode = sccData.reduce((sum, l) => sum + (l.Code || 0), 0);
@@ -150,12 +155,12 @@ function addSeparators(tableStr, char) {
   const lines = tableStr.split('\n');
   if (lines.length < 4) return tableStr;
 
-  const width = stripAnsi(lines[0]).length;
+  // Use header row width — top border is narrower due to single-char top-mid vs 2-char middle
+  const width = stripAnsi(lines[1]).length;
   const sep = char.repeat(width);
 
-  // Insert after header (index 1) and before totals (second-to-last line)
   const result = [];
-  result.push(lines[0]); // top border
+  // Skip lines[0] (top border) — section header already serves as delimiter
   result.push(lines[1]); // header row
   result.push(sep);      // header separator
 
@@ -166,7 +171,7 @@ function addSeparators(tableStr, char) {
 
   result.push(sep);                    // totals separator
   result.push(lines[lines.length - 2]); // totals row
-  result.push(lines[lines.length - 1]); // bottom border
+  // Skip bottom border — totals row is the natural end
 
   return result.join('\n');
 }

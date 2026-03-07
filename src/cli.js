@@ -118,10 +118,6 @@ async function execute(directories, opts) {
         parts.push(formatSccTable(sccData, { ci: opts.ci, byFile: opts.byFile }));
       }
 
-      if (files.length === 0) {
-        parts.unshift('\nNo office documents found.');
-      }
-
       const elapsed = Date.now() - startTime;
       const summary = formatSummaryLine(stats, sccData, elapsed, { ci: opts.ci });
       if (summary) parts.push(summary);
