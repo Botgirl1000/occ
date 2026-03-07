@@ -1,5 +1,7 @@
 import path from 'node:path';
-import { EXTENSION_TO_TYPE } from './utils.js';
+import { METRIC_FIELDS, hasKey } from './utils.js';
+
+const SUM_FIELDS = ['files', ...METRIC_FIELDS, 'size'];
 
 export function aggregate(results, options = {}) {
   const { byFile = false, sort = 'files' } = options;
@@ -16,25 +18,9 @@ function aggregateByType(results, sort) {
   for (const r of results) {
     const key = r.success ? r.fileType : 'Unreadable';
     if (!groups[key]) {
-      groups[key] = {
-        fileType: key,
-        files: 0,
-        words: 0,
-        pages: 0,
-        paragraphs: 0,
-        sheets: 0,
-        rows: 0,
-        cells: 0,
-        slides: 0,
-        size: 0,
-        hasWords: false,
-        hasPages: false,
-        hasParagraphs: false,
-        hasSheets: false,
-        hasRows: false,
-        hasCells: false,
-        hasSlides: false,
-      };
+      const g = { fileType: key, files: 0, size: 0 };
+      for (const f of METRIC_FIELDS) { g[f] = 0; g[hasKey(f)] = false; }
+      groups[key] = g;
     }
     const g = groups[key];
     g.files++;
@@ -42,13 +28,9 @@ function aggregateByType(results, sort) {
 
     if (r.success && r.metrics) {
       const m = r.metrics;
-      if (m.words != null) { g.words += m.words; g.hasWords = true; }
-      if (m.pages != null) { g.pages += m.pages; g.hasPages = true; }
-      if (m.paragraphs != null) { g.paragraphs += m.paragraphs; g.hasParagraphs = true; }
-      if (m.sheets != null) { g.sheets += m.sheets; g.hasSheets = true; }
-      if (m.rows != null) { g.rows += m.rows; g.hasRows = true; }
-      if (m.cells != null) { g.cells += m.cells; g.hasCells = true; }
-      if (m.slides != null) { g.slides += m.slides; g.hasSlides = true; }
+      for (const f of METRIC_FIELDS) {
+        if (m[f] != null) { g[f] += m[f]; g[hasKey(f)] = true; }
+      }
     }
   }
 
@@ -56,27 +38,20 @@ function aggregateByType(results, sort) {
 }
 
 function aggregateByFile(results, sort) {
-  const rows = results.map(r => ({
-    fileType: r.success ? r.fileType : 'Unreadable',
-    fileName: path.basename(r.filePath),
-    filePath: r.filePath,
-    files: 1,
-    words: r.metrics?.words || 0,
-    pages: r.metrics?.pages || 0,
-    paragraphs: r.metrics?.paragraphs || 0,
-    sheets: r.metrics?.sheets || 0,
-    rows: r.metrics?.rows || 0,
-    cells: r.metrics?.cells || 0,
-    slides: r.metrics?.slides || 0,
-    size: r.size || 0,
-    hasWords: r.metrics?.words != null,
-    hasPages: r.metrics?.pages != null,
-    hasParagraphs: r.metrics?.paragraphs != null,
-    hasSheets: r.metrics?.sheets != null,
-    hasRows: r.metrics?.rows != null,
-    hasCells: r.metrics?.cells != null,
-    hasSlides: r.metrics?.slides != null,
-  }));
+  const rows = results.map(r => {
+    const row = {
+      fileType: r.success ? r.fileType : 'Unreadable',
+      fileName: path.basename(r.filePath),
+      filePath: r.filePath,
+      files: 1,
+      size: r.size || 0,
+    };
+    for (const f of METRIC_FIELDS) {
+      row[f] = r.metrics?.[f] || 0;
+      row[hasKey(f)] = r.metrics?.[f] != null;
+    }
+    return row;
+  });
 
   return finalize(rows, sort, 'by-file');
 }
@@ -100,40 +75,18 @@ function sortRows(rows, sort) {
 }
 
 function computeTotals(rows) {
-  const totals = {
-    fileType: 'Total',
-    files: 0,
-    words: 0,
-    pages: 0,
-    paragraphs: 0,
-    sheets: 0,
-    rows: 0,
-    cells: 0,
-    slides: 0,
-    size: 0,
-  };
+  const totals = { fileType: 'Total' };
+  for (const f of SUM_FIELDS) totals[f] = 0;
   for (const r of rows) {
-    totals.files += r.files;
-    totals.words += r.words;
-    totals.pages += r.pages;
-    totals.paragraphs += r.paragraphs;
-    totals.sheets += r.sheets;
-    totals.rows += r.rows;
-    totals.cells += r.cells;
-    totals.slides += r.slides;
-    totals.size += r.size;
+    for (const f of SUM_FIELDS) totals[f] += r[f];
   }
   return totals;
 }
 
 function detectColumns(rows) {
-  return {
-    hasWords: rows.some(r => r.hasWords),
-    hasPages: rows.some(r => r.hasPages),
-    hasParagraphs: rows.some(r => r.hasParagraphs),
-    hasSheets: rows.some(r => r.hasSheets),
-    hasRows: rows.some(r => r.hasRows),
-    hasCells: rows.some(r => r.hasCells),
-    hasSlides: rows.some(r => r.hasSlides),
-  };
+  const columns = {};
+  for (const f of METRIC_FIELDS) {
+    columns[hasKey(f)] = rows.some(r => r[hasKey(f)]);
+  }
+  return columns;
 }

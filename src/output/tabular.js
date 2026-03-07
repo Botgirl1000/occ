@@ -268,12 +268,5 @@ const colorize = {
   dim: (s) => chalk.dim(s),
 };
 
-const noColor = {
-  header: (s) => s,
-  headerCell: (s) => s,
-  type: (s) => s,
-  number: (s) => s,
-  total: (s) => s,
-  error: (s) => s,
-  dim: (s) => s,
-};
+const identity = (s) => s;
+const noColor = Object.fromEntries(Object.keys(colorize).map(k => [k, identity]));

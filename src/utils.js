@@ -33,3 +33,9 @@ export const EXTENSION_TO_TYPE = {
 };
 
 export const OFFICE_EXTENSIONS = Object.keys(EXTENSION_TO_TYPE);
+
+export const METRIC_FIELDS = ['words', 'pages', 'paragraphs', 'sheets', 'rows', 'cells', 'slides'];
+
+export function hasKey(field) {
+  return `has${field[0].toUpperCase()}${field.slice(1)}`;
+}

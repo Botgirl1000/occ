@@ -13,8 +13,8 @@ export async function parsePptx(filePath) {
   );
   const slides = slideFiles.length;
 
-  // Extract text via officeparser
-  const text = await officeparser.parseOffice(filePath);
+  // Extract text via officeparser (reuse buffer to avoid re-reading)
+  const text = await officeparser.parseOffice(buffer);
   const words = countWords(text);
 
   return {

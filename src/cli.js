@@ -55,9 +55,10 @@ async function execute(directories, opts) {
     ? opts.excludeDir.split(',').map(d => d.trim())
     : ['node_modules', '.git'];
 
-  // Check scc availability (unless --no-code)
+  const includeCode = opts.code !== false;
+
   let sccBinary = null;
-  if (opts.code !== false) {
+  if (includeCode) {
     sccBinary = await checkScc();
   }
 
@@ -83,9 +84,8 @@ async function execute(directories, opts) {
     sort: opts.sort,
   });
 
-  // Run scc for code files
   let sccData = null;
-  if (opts.code !== false) {
+  if (includeCode) {
     if (showProgress) process.stderr.write('\rAnalyzing code with scc...');
     sccData = await runScc(sccBinary, directories, {
       byFile: opts.byFile,
