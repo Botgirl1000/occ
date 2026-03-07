@@ -10,14 +10,6 @@ export async function parseDocx(filePath) {
 
   return {
     fileType: 'Word',
-    metrics: {
-      words,
-      pages,
-      paragraphs,
-      sheets: null,
-      rows: null,
-      cells: null,
-      slides: null,
-    },
+    metrics: { words, pages, paragraphs },
   };
 }

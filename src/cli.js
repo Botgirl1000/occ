@@ -41,6 +41,14 @@ export async function run(argv) {
   await program.parseAsync(argv);
 }
 
+function validateLargeFileLimit(value) {
+  const n = parseFloat(value);
+  if (Number.isNaN(n) || n <= 0) {
+    throw new Error(`Invalid --large-file-limit value: "${value}" (must be a positive number)`);
+  }
+  return n;
+}
+
 async function execute(directories, opts) {
   const startTime = Date.now();
   const excludeDirs = opts.excludeDir
@@ -48,8 +56,9 @@ async function execute(directories, opts) {
     : ['node_modules', '.git'];
 
   // Check scc availability (unless --no-code)
+  let sccBinary = null;
   if (opts.code !== false) {
-    await checkScc();
+    sccBinary = await checkScc();
   }
 
   // Find and parse office documents
@@ -58,7 +67,7 @@ async function execute(directories, opts) {
     excludeExt: opts.excludeExt,
     excludeDir: excludeDirs,
     noGitignore: !opts.gitignore,
-    largeFileLimit: parseFloat(opts.largeFileLimit),
+    largeFileLimit: validateLargeFileLimit(opts.largeFileLimit),
   });
 
   const showProgress = opts.format !== 'json' && process.stderr.isTTY;
@@ -78,7 +87,7 @@ async function execute(directories, opts) {
   let sccData = null;
   if (opts.code !== false) {
     if (showProgress) process.stderr.write('\rAnalyzing code with scc...');
-    sccData = await runScc(directories, {
+    sccData = await runScc(sccBinary, directories, {
       byFile: opts.byFile,
       excludeDir: excludeDirs,
       sort: opts.sort,

@@ -48,16 +48,22 @@ export async function findFiles(directories, options = {}) {
   const files = [];
   const skipped = [];
 
-  for (const p of allPaths) {
-    try {
-      const s = await stat(p);
-      if (s.size > limitBytes) {
-        skipped.push({ path: p, reason: `Exceeds ${largeFileLimit}MB limit`, size: s.size });
+  // Batch stat calls for better throughput on large directories
+  const BATCH_SIZE = 50;
+  for (let i = 0; i < allPaths.length; i += BATCH_SIZE) {
+    const batch = allPaths.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(batch.map(p => stat(p)));
+    for (let j = 0; j < results.length; j++) {
+      const p = batch[j];
+      const r = results[j];
+      if (r.status === 'rejected') {
+        const err = r.reason;
+        skipped.push({ path: p, reason: err.code === 'EACCES' ? 'Permission denied' : err.message, size: 0 });
+      } else if (r.value.size > limitBytes) {
+        skipped.push({ path: p, reason: `Exceeds ${largeFileLimit}MB limit`, size: r.value.size });
       } else {
-        files.push({ path: p, size: s.size });
+        files.push({ path: p, size: r.value.size });
       }
-    } catch (err) {
-      skipped.push({ path: p, reason: err.code === 'EACCES' ? 'Permission denied' : err.message, size: 0 });
     }
   }
 

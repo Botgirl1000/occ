@@ -18,14 +18,6 @@ export async function parseXlsx(filePath) {
 
   return {
     fileType: 'Excel',
-    metrics: {
-      words: null,
-      pages: null,
-      paragraphs: null,
-      sheets,
-      rows,
-      cells,
-      slides: null,
-    },
+    metrics: { sheets, rows, cells },
   };
 }

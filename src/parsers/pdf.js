@@ -44,14 +44,6 @@ export async function parsePdf(filePath) {
 
   return {
     fileType: 'PDF',
-    metrics: {
-      words,
-      pages: data.numpages,
-      paragraphs: null,
-      sheets: null,
-      rows: null,
-      cells: null,
-      slides: null,
-    },
+    metrics: { words, pages: data.numpages },
   };
 }

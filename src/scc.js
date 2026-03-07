@@ -28,19 +28,18 @@ async function findScc() {
   }
 }
 
-let sccBinary = null;
-
 export async function checkScc() {
-  sccBinary = await findScc();
-  if (!sccBinary) {
+  const binary = await findScc();
+  if (!binary) {
     throw new Error(
       'scc is required but not found.\n' +
       'Run "npm install" to auto-download it, or install manually from https://github.com/boyter/scc'
     );
   }
+  return binary;
 }
 
-export async function runScc(directories, options = {}) {
+export async function runScc(sccBinary, directories, options = {}) {
   const {
     byFile = false,
     excludeDir = [],
@@ -49,7 +48,6 @@ export async function runScc(directories, options = {}) {
     noGitignore = false,
   } = options;
 
-  if (!sccBinary) sccBinary = await findScc();
   if (!sccBinary) return [];
 
   const args = ['--format', 'json'];

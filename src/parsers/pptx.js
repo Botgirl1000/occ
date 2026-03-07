@@ -19,14 +19,6 @@ export async function parsePptx(filePath) {
 
   return {
     fileType: 'PowerPoint',
-    metrics: {
-      words,
-      pages: null,
-      paragraphs: null,
-      sheets: null,
-      rows: null,
-      cells: null,
-      slides,
-    },
+    metrics: { words, slides },
   };
 }

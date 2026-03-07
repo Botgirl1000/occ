@@ -23,15 +23,7 @@ async function parseOdt(filePath) {
 
   return {
     fileType: 'ODT',
-    metrics: {
-      words,
-      pages,
-      paragraphs,
-      sheets: null,
-      rows: null,
-      cells: null,
-      slides: null,
-    },
+    metrics: { words, pages, paragraphs },
   };
 }
 
@@ -49,15 +41,7 @@ async function parseOds(buffer) {
 
   return {
     fileType: 'ODS',
-    metrics: {
-      words: null,
-      pages: null,
-      paragraphs: null,
-      sheets,
-      rows,
-      cells,
-      slides: null,
-    },
+    metrics: { sheets, rows, cells },
   };
 }
 
@@ -73,14 +57,6 @@ async function parseOdp(buffer) {
 
   return {
     fileType: 'ODP',
-    metrics: {
-      words,
-      pages: null,
-      paragraphs: null,
-      sheets: null,
-      rows: null,
-      cells: null,
-      slides,
-    },
+    metrics: { words, slides },
   };
 }
