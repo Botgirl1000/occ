@@ -1,0 +1,30 @@
+{
+  "name": "occ",
+  "version": "0.1.0",
+  "description": "Office Cloc and Count — scc-style summary tables for office documents",
+  "type": "module",
+  "bin": {
+    "occ": "./bin/occ.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node bin/occ.js",
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "cli-table3": "^0.6.5",
+    "commander": "^12.1.0",
+    "exceljs": "^4.4.0",
+    "fast-glob": "^3.3.2",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.8.0",
+    "officeparser": "^6.0.1",
+    "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {
+    "docx": "^9.6.0"
+  }
+}
