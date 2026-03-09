@@ -1,6 +1,6 @@
 # scc Integration
 
-OCC uses [scc](https://github.com/boyter/scc) (Succinct Code Counter) for code metrics. This page explains how scc is found, invoked, and integrated.
+OCC uses [scc](https://github.com/boyter/scc) (Succinct Code Counter) for code metrics. The integration is implemented in `src/scc.ts`. This page explains how scc is found, invoked, and integrated.
 
 ## Binary Resolution
 
@@ -49,7 +49,7 @@ If the download fails (network issues, unsupported platform), the postinstall sc
 
 ## How scc Is Invoked
 
-OCC runs scc as a subprocess via `child_process.execFile` with `--format json` to get structured output:
+OCC runs scc as a subprocess via `child_process.execFile` (in `src/scc.ts`) with `--format json` to get structured output:
 
 ```
 scc --format json \

@@ -40,6 +40,7 @@ Scanned 23 documents (56,750 words, 201 pages) in 120ms
 
 - **Office document metrics** — words, pages, paragraphs, slides, sheets, rows, cells
 - **Seven formats supported** — DOCX, XLSX, PPTX, PDF, ODT, ODS, ODP
+- **Document structure extraction** — `--structure` parses heading hierarchy into a navigable tree with dotted section codes
 - **Code metrics via scc** — auto-detects code files and integrates scc output
 - **Multiple output modes** — grouped by type, per-file breakdown, or JSON
 - **CI-friendly** — ASCII-only, no-color mode for pipelines
@@ -62,6 +63,7 @@ Tools like `scc`, `cloc`, and `tokei` give you instant visibility into codebases
 
 - **Context budgeting** — LLMs have finite context windows. OCC's word and page counts let agents estimate how much of a document set they can ingest before hitting token limits
 - **Prioritization** — an agent deciding which documents to read can use OCC's JSON output to rank files by size, word count, or type, focusing on the most relevant content first
+- **RAG chunk mapping** — `--structure --format json` outputs heading trees with character offsets, enabling chunk-to-section mapping, scoped retrieval, and citation paths in RAG pipelines
 - **Repository mapping** — agents exploring an unfamiliar codebase can run `occ --format json` to build a structured inventory of all non-code content alongside `scc` code metrics
 - **Pipeline integration** — JSON output pipes directly into agent toolchains for automated document analysis, summarization, or compliance checking
 

@@ -84,6 +84,73 @@ occ --format json docs/
 
 The `documents` section always contains `files` (array of per-type or per-file entries) and `totals`. The `code` section is the raw scc JSON output, only present when code files are found.
 
+When `--structure` is used, an additional `structures` key appears:
+
+```json
+{
+  "documents": { ... },
+  "structures": [
+    {
+      "file": "/path/to/report.docx",
+      "totalNodes": 10,
+      "maxDepth": 3,
+      "nodes": [
+        {
+          "nodeId": "0001",
+          "title": "Executive Summary",
+          "level": 1,
+          "startChar": 0,
+          "endChar": 325,
+          "startLine": 1,
+          "structureCode": "1",
+          "children": [
+            {
+              "nodeId": "0002",
+              "title": "Background",
+              "level": 2,
+              "startChar": 71,
+              "endChar": 193,
+              "startLine": 5,
+              "structureCode": "1.1",
+              "parentNodeId": "0001",
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Each structure node includes character offsets (`startChar`, `endChar`), line numbers, and optional page mappings (`startPage`, `endPage`) for PDFs.
+
+## Structure Output
+
+Use `--structure` to display heading hierarchy for each document:
+
+```bash
+occ --structure docs/
+```
+
+```
+-- Structure: report.docx --------------------------------------------------
+1   Executive Summary
+  1.1   Background ......................................... p.1
+  1.2   Key Findings ....................................... p.1-2
+2   Methodology
+  2.1   Data Collection .................................... p.3
+  2.2   Analysis Framework ................................. p.4
+    2.2.1   Quantitative Methods ........................... p.4
+    2.2.2   Qualitative Methods ............................ p.5
+3   Results ................................................ p.6-8
+4   Conclusions ............................................ p.9
+
+4 sections, 10 nodes, max depth 3
+```
+
+Structure is extracted from DOCX (via heading styles), PDF (with page markers), PPTX/ODP (slide headers), and ODT (best-effort). Spreadsheets are skipped. Page ranges are only shown when available (primarily for PDFs).
+
 ## By-File Mode
 
 Use `--by-file` / `-f` to show one row per file instead of grouping by type:

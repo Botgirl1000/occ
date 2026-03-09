@@ -12,6 +12,8 @@ Detailed breakdown of how OCC extracts metrics from each format.
 - **Pages** — estimated at 250 words per page (`Math.max(1, Math.ceil(words / 250))`)
 - **Paragraphs** — text split on double newlines, filtered for non-empty segments
 
+**Structure extraction:** mammoth converts DOCX to HTML (mapping `Heading 1`–`Heading 6` styles to `<h1>`–`<h6>`), then [turndown](https://www.npmjs.com/package/turndown) converts to markdown with `#`–`######` headers. This gives accurate heading hierarchy without parsing DOCX XML directly.
+
 !!! note "Page estimation"
     DOCX files don't store reliable page counts. OCC estimates pages at 250 words per page, which is a standard publishing convention.
 
@@ -23,6 +25,8 @@ Detailed breakdown of how OCC extracts metrics from each format.
 
 - **Words** — text extracted by pdf-parse, then split on whitespace
 - **Pages** — actual page count from the PDF metadata (`data.numpages`)
+
+**Structure extraction:** pdf-parse is invoked with a custom `pagerender` callback that prepends `[Page N]` markers before each page's text. These markers enable section-to-page mapping in the structure tree. Headers in the extracted text are identified by markdown heading syntax.
 
 PDF is the only format that provides a true page count rather than an estimate.
 
@@ -47,6 +51,8 @@ Word and page counts are not extracted from spreadsheets.
 - **Words** — text extracted via officeparser, then split on whitespace
 - **Slides** — counted by inspecting the ZIP structure for `ppt/slides/slideN.xml` entries
 
+**Structure extraction:** Slides are enumerated from the ZIP in order and `# Slide N` headers are inserted, creating a flat one-level structure.
+
 ## ODT (OpenDocument Text)
 
 **Parser:** [officeparser](https://www.npmjs.com/package/officeparser)
@@ -56,6 +62,8 @@ Word and page counts are not extracted from spreadsheets.
 - **Words** — text extracted via officeparser, then split on whitespace
 - **Pages** — estimated at 250 words per page (same as Word)
 - **Paragraphs** — text split on newlines, filtered for non-empty segments
+
+**Structure extraction:** Text is extracted via officeparser. Heading detection is best-effort since ODT formatting may not always be preserved in the plain text output.
 
 ## ODS (OpenDocument Spreadsheet)
 
@@ -75,3 +83,5 @@ Word and page counts are not extracted from spreadsheets.
 
 - **Words** — text extracted via officeparser, then split on whitespace
 - **Slides** — counted by matching `<draw:page` elements in `content.xml`
+
+**Structure extraction:** Similar to PPTX — slides are counted from `content.xml` and `# Slide N` headers are inserted.

@@ -1,20 +1,21 @@
 import { readFile } from 'node:fs/promises';
 import pdf from 'pdf-parse';
 import { countWords } from '../utils.js';
+import type { ParserOutput } from '../types.js';
 
 // Suppress noisy pdf.js warnings (font parsing, deprecated API, etc.)
 // Reference-counted to handle concurrent PDFs in the same batch safely.
 const originalLog = console.log;
 let suppressionDepth = 0;
-const capturedWarnings = [];
+const capturedWarnings: string[] = [];
 
 const SUPPRESSED_PREFIXES = ['Warning: ', 'Info: ', 'Deprecated API usage: '];
 
 function beginSuppression() {
   if (suppressionDepth++ === 0) {
-    console.log = (...args) => {
-      if (typeof args[0] === 'string' && SUPPRESSED_PREFIXES.some(p => args[0].startsWith(p))) {
-        capturedWarnings.push(args[0]);
+    console.log = (...args: unknown[]) => {
+      if (typeof args[0] === 'string' && SUPPRESSED_PREFIXES.some(p => (args[0] as string).startsWith(p))) {
+        capturedWarnings.push(args[0] as string);
         return;
       }
       originalLog.apply(console, args);
@@ -29,11 +30,11 @@ function endSuppression() {
   }
 }
 
-export async function parsePdf(filePath) {
+export async function parsePdf(filePath: string): Promise<ParserOutput> {
   const buffer = await readFile(filePath);
 
   beginSuppression();
-  let data;
+  let data: { text: string; numpages: number };
   try {
     data = await pdf(buffer);
   } finally {

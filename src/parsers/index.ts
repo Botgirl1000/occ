@@ -4,8 +4,11 @@ import { parsePdf } from './pdf.js';
 import { parseXlsx } from './xlsx.js';
 import { parsePptx } from './pptx.js';
 import { parseOdf } from './odf.js';
+import type { FileEntry, ParseResult, ParserOutput } from '../types.js';
 
-const PARSER_MAP = {
+type ParserFn = (filePath: string) => Promise<ParserOutput>;
+
+const PARSER_MAP: Record<string, ParserFn> = {
   docx: parseDocx,
   pdf: parsePdf,
   xlsx: parseXlsx,
@@ -15,7 +18,7 @@ const PARSER_MAP = {
   odp: parseOdf,
 };
 
-function failureResult(filePath, size, ext) {
+function failureResult(filePath: string, size: number, ext: string): ParseResult {
   return {
     filePath,
     size,
@@ -25,7 +28,7 @@ function failureResult(filePath, size, ext) {
   };
 }
 
-export async function parseFile(filePath, size) {
+export async function parseFile(filePath: string, size: number): Promise<ParseResult> {
   const ext = getExtension(filePath);
   const parser = PARSER_MAP[ext];
 
@@ -47,8 +50,10 @@ export async function parseFile(filePath, size) {
   }
 }
 
-export async function parseFiles(files, concurrency = 10, onProgress) {
-  const results = [];
+export type ProgressCallback = (increment: number, detail?: string) => void;
+
+export async function parseFiles(files: FileEntry[], concurrency = 10, onProgress?: ProgressCallback): Promise<ParseResult[]> {
+  const results: ParseResult[] = [];
   for (let i = 0; i < files.length; i += concurrency) {
     const batch = files.slice(i, i + concurrency);
     const batchResults = await Promise.allSettled(
@@ -57,7 +62,7 @@ export async function parseFiles(files, concurrency = 10, onProgress) {
     for (let j = 0; j < batchResults.length; j++) {
       const r = batchResults[j];
       results.push(r.status === 'fulfilled' ? r.value : {
-        filePath: batch[j]?.path,
+        filePath: batch[j]?.path ?? '',
         size: 0,
         success: false,
         fileType: 'Unreadable',

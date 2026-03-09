@@ -1,7 +1,8 @@
 import mammoth from 'mammoth';
 import { countWords } from '../utils.js';
+import type { ParserOutput } from '../types.js';
 
-export async function parseDocx(filePath) {
+export async function parseDocx(filePath: string): Promise<ParserOutput> {
   const result = await mammoth.extractRawText({ path: filePath });
   const text = result.value || '';
   const words = countWords(text);

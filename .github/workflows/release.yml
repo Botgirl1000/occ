@@ -58,10 +58,11 @@ jobs:
 
       - run: npm ci
 
-      - name: Generate test fixtures and verify binary
+      - name: Build, generate test fixtures, and verify
         run: |
+          npm run build
           node test/create-fixtures.js
-          node bin/occ.js test/fixtures/
+          node dist/bin/occ.js test/fixtures/
 
       - name: Publish to npm (skip if already published)
         run: |

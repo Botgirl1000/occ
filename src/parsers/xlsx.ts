@@ -1,6 +1,7 @@
 import XLSX from 'xlsx';
+import type { ParserOutput } from '../types.js';
 
-export async function parseXlsx(filePath) {
+export async function parseXlsx(filePath: string): Promise<ParserOutput> {
   const workbook = XLSX.readFile(filePath);
 
   const sheets = workbook.SheetNames.length;

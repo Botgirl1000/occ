@@ -32,13 +32,14 @@ npx @cesarandreslopez/occ docs/ reports/
 git clone https://github.com/cesarandreslopez/occ.git
 cd occ
 npm install
+npm run build
 npm link    # makes `occ` available globally
 ```
 
-Or run directly without linking:
+Or run in dev mode without building:
 
 ```bash
-node bin/occ.js docs/
+npx tsx bin/occ.ts docs/
 ```
 
 ## scc Binary

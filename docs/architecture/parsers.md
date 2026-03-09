@@ -4,32 +4,24 @@ The parser system is responsible for extracting metrics from office documents.
 
 ## Parser Interface
 
-Every parser function returns an object with this shape:
+Every parser function implements the `ParserOutput` interface defined in `src/types.ts`:
 
-```javascript
-{
-  fileType: 'Word',       // Display name for the format
-  metrics: {
-    words: 5200,          // Word count (null if not applicable)
-    pages: 21,            // Page count (null if not applicable)
-    paragraphs: 82,       // Paragraph count (null if not applicable)
-    sheets: null,         // Sheet count (null if not applicable)
-    rows: null,           // Row count (null if not applicable)
-    cells: null,          // Cell count (null if not applicable)
-    slides: null,         // Slide count (null if not applicable)
-  }
+```typescript
+interface ParserOutput {
+  fileType: string;              // Display name for the format
+  metrics: Record<string, number>;  // Only populated fields (e.g., { words: 5200, pages: 21 })
 }
 ```
 
-The router in `parsers/index.js` wraps each result with file metadata:
+The router in `parsers/index.ts` wraps each result with file metadata:
 
-```javascript
-{
-  filePath: '/path/to/file.docx',
-  size: 45056,
-  success: true,          // false if parsing failed
-  fileType: 'Word',
-  metrics: { ... }
+```typescript
+interface ParseResult {
+  filePath: string;
+  size: number;
+  success: boolean;              // false if parsing failed
+  fileType: string;
+  metrics: Record<string, number> | null;
 }
 ```
 
@@ -54,10 +46,10 @@ graph TD
 
 ## PARSER_MAP
 
-The extension-to-parser mapping in `parsers/index.js`:
+The extension-to-parser mapping in `parsers/index.ts`:
 
-```javascript
-const PARSER_MAP = {
+```typescript
+const PARSER_MAP: Record<string, ParserFn> = {
   docx: parseDocx,
   pdf:  parsePdf,
   xlsx: parseXlsx,
@@ -74,7 +66,7 @@ Note that `odt`, `ods`, and `odp` all route to the same `parseOdf` function, whi
 
 `parseFiles()` processes files in batches of 10 using `Promise.allSettled`:
 
-```javascript
+```typescript
 for (let i = 0; i < files.length; i += concurrency) {
   const batch = files.slice(i, i + concurrency);
   const results = await Promise.allSettled(

@@ -12,7 +12,7 @@ OCC will discover all supported files (DOCX, XLSX, PPTX, PDF, ODT, ODS, ODP), ex
 
 ## Understanding the Output
 
-OCC produces up to two sections:
+OCC produces up to three sections:
 
 **Documents** — metrics from office files, grouped by format:
 
@@ -38,6 +38,20 @@ OCC produces up to two sections:
   Total          15     2340      180       320     1840
 ```
 
+**Structure** (with `--structure`) — heading hierarchy per document:
+
+```
+-- Structure: report.docx --------------------------------------------------
+1   Executive Summary
+  1.1   Background ......................................... p.1
+  1.2   Key Findings ....................................... p.1-2
+2   Methodology
+  2.1   Data Collection .................................... p.3
+3   Results ................................................ p.6-8
+
+3 sections, 6 nodes, max depth 2
+```
+
 ## Key Flags to Try
 
 ```bash
@@ -46,6 +60,12 @@ occ --by-file docs/
 
 # JSON output for automation
 occ --format json docs/
+
+# Extract document structure
+occ --structure docs/
+
+# Structure as JSON (for RAG pipelines)
+occ --structure --format json docs/
 
 # Skip code analysis
 occ --no-code docs/

@@ -18,7 +18,7 @@ Fixes #(issue number)
 - [ ] I have read the [Contributing Guidelines](CONTRIBUTING.md)
 - [ ] My code follows the project's code style
 - [ ] I have tested my changes locally
-- [ ] `node bin/occ.js test/fixtures/` runs successfully
+- [ ] `npm run build && node dist/bin/occ.js test/fixtures/` runs successfully
 - [ ] I have updated documentation as needed
 
 ## Testing

@@ -1,5 +1,7 @@
 import { Command, Option } from 'commander';
 import { readFile, writeFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { findFiles } from './walker.js';
 import { parseFiles } from './parsers/index.js';
 import { aggregate } from './stats.js';
@@ -7,10 +9,42 @@ import { formatDocumentTable, formatSccTable, formatSummaryLine } from './output
 import { formatJson } from './output/json.js';
 import { checkScc, runScc } from './scc.js';
 import { createProgress } from './progress.js';
+import { documentToMarkdown } from './markdown/convert.js';
+import { extractFromMarkdown } from './structure/index.js';
+import { formatStructureTree, formatStructureJson } from './output/tree.js';
+import type { StructureResult } from './output/tree.js';
+import type { ParseResult } from './types.js';
+import type { FileEntry } from './types.js';
+import type { SccLanguage } from './scc.js';
+import { getExtension } from './utils.js';
 
-const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
+interface CliOptions {
+  byFile?: boolean;
+  format: string;
+  includeExt?: string;
+  excludeExt?: string;
+  excludeDir?: string;
+  gitignore: boolean;
+  sort: string;
+  output?: string;
+  ci?: boolean;
+  largeFileLimit: string;
+  code: boolean;
+  structure?: boolean;
+}
 
-export async function run(argv) {
+// Find package.json — works from both src/ (dev) and dist/src/ (built)
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+async function loadPkg() {
+  for (const rel of ['..', '../..']) {
+    try { return JSON.parse(await readFile(path.resolve(__dirname, rel, 'package.json'), 'utf8')); }
+    catch { /* try next */ }
+  }
+  return { version: '0.0.0' };
+}
+const pkg = await loadPkg();
+
+export async function run(argv: string[]) {
   const program = new Command();
 
   program
@@ -29,11 +63,13 @@ export async function run(argv) {
     .option('--ci', 'ASCII-only output, no colors')
     .option('--large-file-limit <mb>', 'skip files over this size in MB', '50')
     .option('--no-code', 'skip scc code analysis')
-    .action(async (directories, opts) => {
+    .option('--structure', 'extract and display document structure')
+    .action(async (directories: string[], opts: CliOptions) => {
       try {
         await execute(directories, opts);
-      } catch (err) {
-        process.stderr.write(`Error: ${err.message}\n`);
+      } catch (err: unknown) {
+        const error = err as Error;
+        process.stderr.write(`Error: ${error.message}\n`);
         process.exit(1);
       }
     });
@@ -41,7 +77,7 @@ export async function run(argv) {
   await program.parseAsync(argv);
 }
 
-function validateLargeFileLimit(value) {
+function validateLargeFileLimit(value: string): number {
   const n = parseFloat(value);
   if (Number.isNaN(n) || n <= 0) {
     throw new Error(`Invalid --large-file-limit value: "${value}" (must be a positive number)`);
@@ -49,7 +85,38 @@ function validateLargeFileLimit(value) {
   return n;
 }
 
-async function execute(directories, opts) {
+const STRUCTURABLE_EXTS = new Set(['docx', 'pdf', 'pptx', 'odt', 'odp']);
+
+async function extractStructures(
+  files: FileEntry[],
+  concurrency: number,
+  onProgress?: (inc: number, detail?: string) => void,
+): Promise<StructureResult[]> {
+  const results: StructureResult[] = [];
+
+  for (let i = 0; i < files.length; i += concurrency) {
+    const batch = files.slice(i, i + concurrency);
+    const batchResults = await Promise.allSettled(
+      batch.map(async (f) => {
+        const markdown = await documentToMarkdown(f.path);
+        if (markdown == null) return null;
+        const structure = extractFromMarkdown(markdown);
+        return { file: f.path, structure, markdown } as StructureResult;
+      })
+    );
+    for (let j = 0; j < batchResults.length; j++) {
+      const r = batchResults[j];
+      if (r.status === 'fulfilled' && r.value) {
+        results.push(r.value);
+      }
+      if (onProgress) onProgress(1, batch[j]?.path);
+    }
+  }
+
+  return results;
+}
+
+async function execute(directories: string[], opts: CliOptions) {
   const startTime = Date.now();
   const excludeDirs = opts.excludeDir
     ? opts.excludeDir.split(',').map(d => d.trim())
@@ -57,7 +124,7 @@ async function execute(directories, opts) {
 
   const includeCode = opts.code !== false;
 
-  let sccBinary = null;
+  let sccBinary: string | null = null;
   if (includeCode) {
     sccBinary = await checkScc();
   }
@@ -72,7 +139,7 @@ async function execute(directories, opts) {
   });
 
   const showProgress = opts.format !== 'json' && process.stderr.isTTY;
-  let results = [];
+  let results: ParseResult[] = [];
   if (files.length > 0) {
     const progress = createProgress({ total: files.length, label: 'Parsing', enabled: showProgress });
     results = await parseFiles(files, 10, (inc, detail) => progress.update(inc, detail));
@@ -84,7 +151,7 @@ async function execute(directories, opts) {
     sort: opts.sort,
   });
 
-  let sccData = null;
+  let sccData: SccLanguage[] | null = null;
   if (includeCode) {
     if (showProgress) process.stderr.write('\rAnalyzing code with scc...');
     sccData = await runScc(sccBinary, directories, {
@@ -100,12 +167,23 @@ async function execute(directories, opts) {
     }
   }
 
+  // Structure extraction
+  let structureResults: StructureResult[] = [];
+  if (opts.structure) {
+    const structurableFiles = files.filter(f => STRUCTURABLE_EXTS.has(getExtension(f.path)));
+    if (structurableFiles.length > 0) {
+      const progress = createProgress({ total: structurableFiles.length, label: 'Extracting structure', enabled: showProgress });
+      structureResults = await extractStructures(structurableFiles, 10, (inc, detail) => progress.update(inc, detail));
+      progress.done();
+    }
+  }
+
   // Format output
-  let output;
+  let output: string;
   if (opts.format === 'json') {
-    output = formatJson(stats, sccData);
+    output = formatJson(stats, sccData, opts.structure ? structureResults : undefined);
   } else {
-    const parts = [];
+    const parts: string[] = [];
 
     if (files.length === 0 && (!sccData || sccData.length === 0)) {
       parts.push('No files found.');
@@ -116,6 +194,13 @@ async function execute(directories, opts) {
 
       if (sccData && sccData.length > 0) {
         parts.push(formatSccTable(sccData, { ci: opts.ci, byFile: opts.byFile }));
+      }
+
+      // Structure trees
+      if (structureResults.length > 0) {
+        for (const sr of structureResults) {
+          parts.push(formatStructureTree(sr, { ci: opts.ci }));
+        }
       }
 
       const elapsed = Date.now() - startTime;

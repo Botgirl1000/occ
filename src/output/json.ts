@@ -1,10 +1,18 @@
 import { METRIC_FIELDS, hasKey } from '../utils.js';
+import { formatStructureJson } from './tree.js';
+import type { AggregateResult, StatsRow } from '../stats.js';
+import type { SccLanguage } from '../scc.js';
+import type { StructureResult } from './tree.js';
 
-export function formatJson(stats, sccData = null) {
+export function formatJson(
+  stats: AggregateResult,
+  sccData: SccLanguage[] | null = null,
+  structureResults?: StructureResult[],
+): string {
   const { columns } = stats;
 
-  const mapRow = (r) => {
-    const entry = {
+  const mapRow = (r: StatsRow) => {
+    const entry: Record<string, unknown> = {
       type: r.fileType,
       ...(r.fileName ? { name: r.fileName } : {}),
       ...(r.filePath ? { path: r.filePath } : {}),
@@ -17,8 +25,8 @@ export function formatJson(stats, sccData = null) {
     return entry;
   };
 
-  const mapTotals = (t) => {
-    const entry = { files: t.files };
+  const mapTotals = (t: StatsRow) => {
+    const entry: Record<string, unknown> = { files: t.files };
     for (const f of METRIC_FIELDS) {
       if (columns[hasKey(f)]) entry[f] = t[f];
     }
@@ -26,7 +34,7 @@ export function formatJson(stats, sccData = null) {
     return entry;
   };
 
-  const output = {
+  const output: Record<string, unknown> = {
     documents: {
       files: stats.rows.map(mapRow),
       totals: mapTotals(stats.totals),
@@ -35,6 +43,10 @@ export function formatJson(stats, sccData = null) {
 
   if (sccData && sccData.length > 0) {
     output.code = sccData;
+  }
+
+  if (structureResults && structureResults.length > 0) {
+    output.structures = formatStructureJson(structureResults);
   }
 
   return JSON.stringify(output, null, 2);

@@ -19,6 +19,7 @@ OCC scans directories for office documents (DOCX, XLSX, PPTX, PDF, ODT, ODS, ODP
 
 - **Office document metrics** — words, pages, paragraphs, slides, sheets, rows, cells
 - **Seven formats supported** — DOCX, XLSX, PPTX, PDF, ODT, ODS, ODP
+- **Document structure extraction** — `--structure` parses heading hierarchy into a navigable tree with dotted section codes (1, 1.1, 1.2, ...)
 - **Code metrics via scc** — auto-detects code files and integrates scc output
 - **Multiple output modes** — grouped by type, per-file breakdown, or JSON
 - **CI-friendly** — ASCII-only, no-color mode for pipelines
@@ -46,6 +47,7 @@ npx @cesarandreslopez/occ docs/ reports/
 ```bash
 git clone https://github.com/cesarandreslopez/occ.git && cd occ
 npm install
+npm run build
 npm start
 ```
 
@@ -63,6 +65,12 @@ occ --by-file docs/
 
 # JSON output
 occ --format json docs/
+
+# Extract document structure (heading hierarchy)
+occ --structure docs/
+
+# Structure as JSON
+occ --structure --format json docs/
 
 # Only specific formats
 occ --include-ext pdf,docx docs/
@@ -97,17 +105,35 @@ occ --ci docs/
 Scanned 23 documents (56,750 words, 201 pages) in 120ms
 ```
 
+### Structure Output (`--structure`)
+
+```
+-- Structure: report.docx --------------------------------------------------
+1   Executive Summary
+  1.1   Background ......................................... p.1
+  1.2   Key Findings ....................................... p.1-2
+2   Methodology
+  2.1   Data Collection .................................... p.3
+  2.2   Analysis Framework ................................. p.4
+    2.2.1   Quantitative Methods ........................... p.4
+    2.2.2   Qualitative Methods ............................ p.5
+3   Results ................................................ p.6-8
+4   Conclusions ............................................ p.9
+
+4 sections, 10 nodes, max depth 3
+```
+
 ## Supported Formats
 
-| Format | Extension | Metrics |
-|--------|-----------|---------|
-| Word | `.docx` | words, pages*, paragraphs |
-| PDF | `.pdf` | words, pages |
-| Excel | `.xlsx` | sheets, rows, cells |
-| PowerPoint | `.pptx` | words, slides |
-| ODT | `.odt` | words, pages*, paragraphs |
-| ODS | `.ods` | sheets, rows, cells |
-| ODP | `.odp` | words, slides |
+| Format | Extension | Metrics | Structure |
+|--------|-----------|---------|-----------|
+| Word | `.docx` | words, pages*, paragraphs | Yes |
+| PDF | `.pdf` | words, pages | Yes (with page mapping) |
+| Excel | `.xlsx` | sheets, rows, cells | — |
+| PowerPoint | `.pptx` | words, slides | Yes (slide headers) |
+| ODT | `.odt` | words, pages*, paragraphs | Yes (best-effort) |
+| ODS | `.ods` | sheets, rows, cells | — |
+| ODP | `.odp` | words, slides | Yes (slide headers) |
 
 \* Pages for Word/ODT are estimated at 250 words/page.
 
@@ -117,6 +143,7 @@ Scanned 23 documents (56,750 words, 201 pages) in 120ms
 |------|-------------|---------|
 | `--by-file` / `-f` | Row per file | grouped by type |
 | `--format <type>` | `tabular` or `json` | `tabular` |
+| `--structure` | Extract and display document heading hierarchy | off |
 | `--include-ext <exts>` | Comma-separated extensions | all supported |
 | `--exclude-ext <exts>` | Comma-separated to skip | none |
 | `--exclude-dir <dirs>` | Directories to skip | `node_modules,.git` |
@@ -151,12 +178,15 @@ Tools like `scc`, `cloc`, and `tokei` give you instant visibility into codebases
 
 - **Context budgeting** — LLMs have finite context windows. OCC's word and page counts let agents estimate how much of a document set they can ingest before hitting token limits
 - **Prioritization** — an agent deciding which documents to read can use OCC's JSON output to rank files by size, word count, or type, focusing on the most relevant content first
+- **RAG chunk mapping** — `--structure --format json` outputs heading trees with character offsets, enabling chunk-to-section mapping, scoped retrieval, and citation paths in RAG pipelines
 - **Repository mapping** — agents exploring an unfamiliar codebase can run `occ --format json` to build a structured inventory of all non-code content alongside `scc` code metrics
 - **Pipeline integration** — JSON output pipes directly into agent toolchains for automated document analysis, summarization, or compliance checking
 
 ## How It Works
 
-OCC uses [fast-glob](https://github.com/mrmlnc/fast-glob) for file discovery, dispatches to format-specific parsers (mammoth for DOCX, pdf-parse for PDF, SheetJS for XLSX, JSZip + officeparser for PPTX/ODF), aggregates metrics, and renders output via cli-table3. For code metrics, it shells out to a vendored [scc](https://github.com/boyter/scc) binary (auto-downloaded during `npm install`, with PATH fallback).
+OCC is written in TypeScript and uses [fast-glob](https://github.com/mrmlnc/fast-glob) for file discovery, dispatches to format-specific parsers (mammoth for DOCX, pdf-parse for PDF, SheetJS for XLSX, JSZip + officeparser for PPTX/ODF), aggregates metrics, and renders output via cli-table3. For code metrics, it shells out to a vendored [scc](https://github.com/boyter/scc) binary (auto-downloaded during `npm install`, with PATH fallback).
+
+For structure extraction (`--structure`), documents are first converted to markdown (mammoth + [turndown](https://github.com/mixmark-io/turndown) for DOCX, pdf-parse with page markers for PDF), then headers are extracted and assembled into a tree with dotted section codes.
 
 ## Contributing
 

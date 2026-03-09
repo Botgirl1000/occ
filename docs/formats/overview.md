@@ -4,17 +4,19 @@ OCC supports seven office document formats across three categories.
 
 ## Format Summary
 
-| Format | Extension | Words | Pages | Paragraphs | Sheets | Rows | Cells | Slides | Parser Library |
-|--------|-----------|:-----:|:-----:|:----------:|:------:|:----:|:-----:|:------:|---------------|
-| Word | `.docx` | Yes | Yes* | Yes | | | | | mammoth |
-| PDF | `.pdf` | Yes | Yes | | | | | | pdf-parse |
-| Excel | `.xlsx` | | | | Yes | Yes | Yes | | SheetJS/xlsx |
-| PowerPoint | `.pptx` | Yes | | | | | | Yes | JSZip + officeparser |
-| ODT | `.odt` | Yes | Yes* | Yes | | | | | officeparser |
-| ODS | `.ods` | | | | Yes | Yes | Yes | | JSZip + officeparser |
-| ODP | `.odp` | Yes | | | | | | Yes | JSZip + officeparser |
+| Format | Extension | Words | Pages | Paragraphs | Sheets | Rows | Cells | Slides | Structure | Parser Library |
+|--------|-----------|:-----:|:-----:|:----------:|:------:|:----:|:-----:|:------:|:---------:|---------------|
+| Word | `.docx` | Yes | Yes* | Yes | | | | | Yes | mammoth |
+| PDF | `.pdf` | Yes | Yes | | | | | | Yes | pdf-parse |
+| Excel | `.xlsx` | | | | Yes | Yes | Yes | | — | SheetJS/xlsx |
+| PowerPoint | `.pptx` | Yes | | | | | | Yes | Yes | JSZip + officeparser |
+| ODT | `.odt` | Yes | Yes* | Yes | | | | | Yes | officeparser |
+| ODS | `.ods` | | | | Yes | Yes | Yes | | — | JSZip + officeparser |
+| ODP | `.odp` | Yes | | | | | | Yes | Yes | JSZip + officeparser |
 
 \* Pages for Word (.docx) and ODT (.odt) are estimated at 250 words per page.
+
+Structure extraction (`--structure`) parses heading hierarchy into a tree with dotted section codes. DOCX heading styles are accurately mapped via mammoth + turndown. PDF pages are mapped to sections. PPTX/ODP produce slide-level headers. Spreadsheets have no heading hierarchy and are skipped.
 
 ## Categories
 

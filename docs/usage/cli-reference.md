@@ -22,6 +22,7 @@ If no directories are specified, OCC scans the current working directory.
 | `--output <file>` / `-o` | Write output to file instead of stdout | stdout |
 | `--ci` | ASCII-only output, no colors | off |
 | `--large-file-limit <mb>` | Skip files over this size in MB | `50` |
+| `--structure` | Extract and display document heading hierarchy | off |
 | `--no-code` | Skip scc code analysis | off |
 | `--version` / `-V` | Print version and exit | |
 | `--help` / `-h` | Print help and exit | |
@@ -108,6 +109,23 @@ Skip files exceeding the specified size in megabytes:
 ```bash
 occ --large-file-limit 100 docs/
 ```
+
+### `--structure`
+
+Extract and display document heading hierarchy. Works with DOCX, PDF, PPTX, ODT, and ODP. Spreadsheets (XLSX, ODS) are skipped since they have no heading hierarchy.
+
+```bash
+# Tree view of headings per document
+occ --structure docs/
+
+# Structure as JSON (includes nodes with character offsets and page mappings)
+occ --structure --format json docs/
+
+# Combine with other flags
+occ --structure --by-file --no-code docs/
+```
+
+The structure output runs alongside existing metrics — the metrics pipeline is untouched.
 
 ### `--no-code`
 

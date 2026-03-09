@@ -1,8 +1,22 @@
 import fg from 'fast-glob';
 import { stat } from 'node:fs/promises';
 import { OFFICE_EXTENSIONS } from './utils.js';
+import type { FileEntry, SkippedEntry } from './types.js';
 
-export async function findFiles(directories, options = {}) {
+export interface FindFilesOptions {
+  includeExt?: string;
+  excludeExt?: string;
+  excludeDir?: string[];
+  noGitignore?: boolean;
+  largeFileLimit?: number;
+}
+
+export interface FindFilesResult {
+  files: FileEntry[];
+  skipped: SkippedEntry[];
+}
+
+export async function findFiles(directories: string[], options: FindFilesOptions = {}): Promise<FindFilesResult> {
   const {
     includeExt,
     excludeExt,
@@ -31,7 +45,7 @@ export async function findFiles(directories, options = {}) {
   const ignore = excludeDir.map(d => `**/${d}/**`);
 
   const dirs = directories.length > 0 ? directories : [process.cwd()];
-  const allPaths = [];
+  const allPaths: string[] = [];
   for (const dir of dirs) {
     const found = await fg(pattern, {
       cwd: dir,
@@ -45,8 +59,8 @@ export async function findFiles(directories, options = {}) {
   }
 
   const limitBytes = largeFileLimit * 1024 * 1024;
-  const files = [];
-  const skipped = [];
+  const files: FileEntry[] = [];
+  const skipped: SkippedEntry[] = [];
 
   // Batch stat calls for better throughput on large directories
   const BATCH_SIZE = 50;
@@ -57,7 +71,7 @@ export async function findFiles(directories, options = {}) {
       const p = batch[j];
       const r = results[j];
       if (r.status === 'rejected') {
-        const err = r.reason;
+        const err = r.reason as NodeJS.ErrnoException;
         skipped.push({ path: p, reason: err.code === 'EACCES' ? 'Permission denied' : err.message, size: 0 });
       } else if (r.value.size > limitBytes) {
         skipped.push({ path: p, reason: `Exceeds ${largeFileLimit}MB limit`, size: r.value.size });

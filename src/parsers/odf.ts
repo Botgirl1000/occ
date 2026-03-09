@@ -2,8 +2,9 @@ import { readFile } from 'node:fs/promises';
 import JSZip from 'jszip';
 import officeparser from 'officeparser';
 import { countWords, getExtension } from '../utils.js';
+import type { ParserOutput } from '../types.js';
 
-export async function parseOdf(filePath) {
+export async function parseOdf(filePath: string): Promise<ParserOutput> {
   const ext = getExtension(filePath);
 
   if (ext === 'odt') return parseOdt(filePath);
@@ -15,10 +16,10 @@ export async function parseOdf(filePath) {
   throw new Error(`Unsupported ODF format: ${ext}`);
 }
 
-async function parseOdt(filePath) {
-  const text = await officeparser.parseOffice(filePath);
+async function parseOdt(filePath: string): Promise<ParserOutput> {
+  const text = await officeparser.parseOffice(filePath) as unknown as string;
   const words = countWords(text);
-  const paragraphs = text.split(/\n+/).filter(s => s.trim().length > 0).length;
+  const paragraphs = text.split(/\n+/).filter((s: string) => s.trim().length > 0).length;
   const pages = Math.max(1, Math.ceil(words / 250));
 
   return {
@@ -27,7 +28,7 @@ async function parseOdt(filePath) {
   };
 }
 
-async function parseOds(buffer) {
+async function parseOds(buffer: Buffer): Promise<ParserOutput> {
   const zip = await JSZip.loadAsync(buffer);
   const contentXml = await zip.file('content.xml')?.async('text');
   if (!contentXml) throw new Error('No content.xml found in ODS');
@@ -36,8 +37,8 @@ async function parseOds(buffer) {
   const rows = (contentXml.match(/<table:table-row/g) || []).length;
 
   // Use officeparser with buffer to avoid re-reading from disk
-  const text = await officeparser.parseOffice(buffer);
-  const cells = text.split(/\n/).filter(s => s.trim().length > 0).length;
+  const text = await officeparser.parseOffice(buffer) as unknown as string;
+  const cells = text.split(/\n/).filter((s: string) => s.trim().length > 0).length;
 
   return {
     fileType: 'ODS',
@@ -45,14 +46,14 @@ async function parseOds(buffer) {
   };
 }
 
-async function parseOdp(buffer) {
+async function parseOdp(buffer: Buffer): Promise<ParserOutput> {
   const zip = await JSZip.loadAsync(buffer);
   const contentXml = await zip.file('content.xml')?.async('text');
   if (!contentXml) throw new Error('No content.xml found in ODP');
 
   const slides = (contentXml.match(/<draw:page /g) || []).length;
 
-  const text = await officeparser.parseOffice(buffer);
+  const text = await officeparser.parseOffice(buffer) as unknown as string;
   const words = countWords(text);
 
   return {

@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-03-09
+
+### Added
+
+- **Document structure extraction** — new `--structure` flag parses heading hierarchy from DOCX, PDF, PPTX, ODT, and ODP files, displaying a navigable tree with dotted section codes (1, 1.1, 1.2, 2, ...)
+- Structure tree output in tabular mode with indented headings, dotted leaders, and page ranges (when available)
+- Structure data in JSON output under a `structures` key (only when `--structure` is used)
+- Page-to-section mapping for PDFs via `[Page N]` markers
+
+### Changed
+
+- **Migrated entire codebase to TypeScript** — all source files under `src/` and `bin/` are now `.ts` with strict type checking
+- Added `npm run build` (compiles to `dist/`) and `npm run dev` (runs via tsx without build step)
+- Published package now ships compiled `dist/` instead of raw `src/`
+- New dependency: `turndown` (HTML-to-markdown conversion for DOCX structure extraction)
+- New devDependencies: `typescript`, `@types/node`, `tsx`, `@types/turndown`
+
 ## [0.1.2] - 2026-03-07
 
 ### Changed
@@ -64,6 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Progress bar with ETA
 - Auto-download of scc binary during `npm install` (skip with `SCC_SKIP_DOWNLOAD=1`)
 
+[0.2.0]: https://github.com/cesarandreslopez/occ/releases/tag/v0.2.0
 [0.1.2]: https://github.com/cesarandreslopez/occ/releases/tag/v0.1.2
 [0.1.1]: https://github.com/cesarandreslopez/occ/releases/tag/v0.1.1
 [0.1.0]: https://github.com/cesarandreslopez/occ/releases/tag/v0.1.0

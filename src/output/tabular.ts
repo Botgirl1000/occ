@@ -1,14 +1,33 @@
 import Table from 'cli-table3';
 import chalk from 'chalk';
 import { formatBytes, formatNumber } from '../utils.js';
+import type { AggregateResult, StatsRow, ColumnVisibility } from '../stats.js';
+import type { SccLanguage } from '../scc.js';
 
-export function formatDocumentTable(stats, options = {}) {
+type ColorFn = (s: string) => string;
+
+interface ColorScheme {
+  header: ColorFn;
+  headerCell: ColorFn;
+  type: ColorFn;
+  number: ColorFn;
+  total: ColorFn;
+  error: ColorFn;
+  dim: ColorFn;
+}
+
+export interface TableOptions {
+  ci?: boolean;
+  byFile?: boolean;
+}
+
+export function formatDocumentTable(stats: AggregateResult, options: TableOptions = {}): string {
   const { ci = false } = options;
-  const c = ci ? noColor : colorize;
+  const c: ColorScheme = ci ? noColor : colorize;
 
   const isByFile = stats.mode === 'by-file';
   const headers = buildHeaders(stats.columns, isByFile, c);
-  const colAligns = buildColAligns(stats.columns, isByFile);
+  const colAligns = buildColAligns(stats.columns, isByFile) as Table.HorizontalAlignment[];
   const table = new Table({
     head: headers.map(h => h.label),
     chars: tableChars(ci),
@@ -26,7 +45,7 @@ export function formatDocumentTable(stats, options = {}) {
 
   const tableWidth = stripAnsi(tableStr.split('\n')[0]).length;
 
-  const lines = [];
+  const lines: string[] = [];
   lines.push('');
   lines.push(c.header(sectionHeader('Documents', tableWidth, ci)));
   lines.push(tableStr);
@@ -42,9 +61,9 @@ export function formatDocumentTable(stats, options = {}) {
   return lines.join('\n');
 }
 
-export function formatSccTable(sccData, options = {}) {
+export function formatSccTable(sccData: SccLanguage[], options: TableOptions = {}): string {
   const { ci = false, byFile = false } = options;
-  const c = ci ? noColor : colorize;
+  const c: ColorScheme = ci ? noColor : colorize;
 
   if (!sccData || sccData.length === 0) return '';
 
@@ -105,7 +124,7 @@ export function formatSccTable(sccData, options = {}) {
   const tableStr = addSeparators(table.toString(), ci ? '-' : '─');
   const tableWidth = stripAnsi(tableStr.split('\n')[0]).length;
 
-  const lines = [];
+  const lines: string[] = [];
   lines.push('');
   lines.push(c.header(sectionHeader('Code (via scc)', tableWidth, ci)));
   lines.push(tableStr);
@@ -113,14 +132,14 @@ export function formatSccTable(sccData, options = {}) {
   return lines.join('\n');
 }
 
-export function formatSummaryLine(stats, sccData, elapsed, options = {}) {
+export function formatSummaryLine(stats: AggregateResult, sccData: SccLanguage[] | null, elapsed: number, options: TableOptions = {}): string {
   const { ci = false } = options;
-  const c = ci ? noColor : colorize;
+  const c: ColorScheme = ci ? noColor : colorize;
 
-  const parts = [];
+  const parts: string[] = [];
   if (stats && stats.totals.files > 0) {
     let docPart = `${stats.totals.files} document${stats.totals.files !== 1 ? 's' : ''}`;
-    const details = [];
+    const details: string[] = [];
     if (stats.totals.words > 0) details.push(`${formatNumber(stats.totals.words)} word${stats.totals.words !== 1 ? 's' : ''}`);
     if (stats.totals.pages > 0) details.push(`${formatNumber(stats.totals.pages)} page${stats.totals.pages !== 1 ? 's' : ''}`);
     if (details.length > 0) docPart += ` (${details.join(', ')})`;
@@ -140,60 +159,45 @@ export function formatSummaryLine(stats, sccData, elapsed, options = {}) {
   return '\n' + c.dim(`Scanned ${parts.join(', ')} in ${time}`) + '\n';
 }
 
-/**
- * Post-process table string to insert separator lines after the header row
- * and before the totals row (last data row).
- *
- * Table layout from cli-table3 (with empty mid chars):
- *   line 0: top border
- *   line 1: header row
- *   lines 2..N-2: data rows
- *   line N-1: totals row
- *   line N: bottom border
- */
-function addSeparators(tableStr, char) {
+function addSeparators(tableStr: string, char: string): string {
   const lines = tableStr.split('\n');
   if (lines.length < 4) return tableStr;
 
-  // Use header row width — top border is narrower due to single-char top-mid vs 2-char middle
   const width = stripAnsi(lines[1]).length;
   const sep = char.repeat(width);
 
-  const result = [];
-  // Skip lines[0] (top border) — section header already serves as delimiter
-  result.push(lines[1]); // header row
-  result.push(sep);      // header separator
+  const result: string[] = [];
+  result.push(lines[1]);
+  result.push(sep);
 
-  // Data rows (everything except first 2 and last 2)
   for (let i = 2; i < lines.length - 2; i++) {
     result.push(lines[i]);
   }
 
-  result.push(sep);                    // totals separator
-  result.push(lines[lines.length - 2]); // totals row
-  // Skip bottom border — totals row is the natural end
+  result.push(sep);
+  result.push(lines[lines.length - 2]);
 
   return result.join('\n');
 }
 
-function stripAnsi(str) {
+export function stripAnsi(str: string): string {
   return str.replace(/\x1b\[[0-9;]*m/g, '');
 }
 
-function sectionHeader(title, width, ci = false) {
+export function sectionHeader(title: string, width: number, ci = false): string {
   const dash = ci ? '-' : '─';
   const prefix = `${dash}${dash} ${title} `;
   const padLen = Math.max(0, width - prefix.length);
   return prefix + dash.repeat(padLen);
 }
 
-function hasExtraColumns(columns) {
-  return columns.hasParagraphs || columns.hasSheets || columns.hasSlides ||
-         columns.hasRows || columns.hasCells;
+function hasExtraColumns(columns: ColumnVisibility): boolean {
+  return !!(columns.hasParagraphs || columns.hasSheets || columns.hasSlides ||
+         columns.hasRows || columns.hasCells);
 }
 
-function buildHeaders(columns, byFile, c) {
-  const headers = [];
+function buildHeaders(columns: ColumnVisibility, byFile: boolean, c: ColorScheme): { key: string; label: string }[] {
+  const headers: { key: string; label: string }[] = [];
   headers.push({ key: 'format', label: c.headerCell(byFile ? 'File' : 'Format') });
   if (!byFile) headers.push({ key: 'files', label: c.headerCell('Files') });
   if (columns.hasWords) headers.push({ key: 'words', label: c.headerCell('Words') });
@@ -203,23 +207,23 @@ function buildHeaders(columns, byFile, c) {
   return headers;
 }
 
-function buildColAligns(columns, byFile) {
-  const aligns = ['left']; // Format/File
-  if (!byFile) aligns.push('right'); // Files
+function buildColAligns(columns: ColumnVisibility, byFile: boolean): string[] {
+  const aligns = ['left'];
+  if (!byFile) aligns.push('right');
   if (columns.hasWords) aligns.push('right');
   if (columns.hasPages) aligns.push('right');
   if (hasExtraColumns(columns)) aligns.push('right');
-  aligns.push('right'); // Size
+  aligns.push('right');
   return aligns;
 }
 
-function buildRow(row, columns, byFile, c, isTotal = false) {
-  const fmt = isTotal ? c.total : (v) => v;
+function buildRow(row: StatsRow, columns: ColumnVisibility, byFile: boolean, c: ColorScheme, isTotal = false): string[] {
+  const fmt = isTotal ? c.total : (v: string) => v;
   const fmtType = isTotal ? c.total : c.type;
   const fmtNum = isTotal ? c.total : c.number;
 
-  const cells = [];
-  let label;
+  const cells: string[] = [];
+  let label: string;
   if (byFile && isTotal) {
     label = `Total (${formatNumber(row.files)} files)`;
   } else if (byFile) {
@@ -235,7 +239,7 @@ function buildRow(row, columns, byFile, c, isTotal = false) {
   if (columns.hasPages) cells.push(fmtNum(row.pages ? formatNumber(row.pages) : ''));
 
   if (hasExtraColumns(columns)) {
-    const parts = [];
+    const parts: string[] = [];
     if (row.paragraphs) parts.push(`${formatNumber(row.paragraphs)} paras`);
     if (row.sheets) parts.push(`${formatNumber(row.sheets)} sheets`);
     if (row.rows) parts.push(`${formatNumber(row.rows)} rows`);
@@ -248,7 +252,7 @@ function buildRow(row, columns, byFile, c, isTotal = false) {
   return cells;
 }
 
-function tableChars(ci) {
+export function tableChars(ci: boolean): Record<string, string> {
   const ch = ci ? '-' : '─';
   return {
     top: ch, 'top-mid': ch, 'top-left': ch, 'top-right': ch,
@@ -258,7 +262,7 @@ function tableChars(ci) {
   };
 }
 
-const colorize = {
+const colorize: ColorScheme = {
   header: (s) => chalk.bold(s),
   headerCell: (s) => chalk.bold(s),
   type: (s) => chalk.cyan(s),
@@ -268,5 +272,5 @@ const colorize = {
   dim: (s) => chalk.dim(s),
 };
 
-const identity = (s) => s;
-const noColor = Object.fromEntries(Object.keys(colorize).map(k => [k, identity]));
+const identity: ColorFn = (s) => s;
+const noColor: ColorScheme = Object.fromEntries(Object.keys(colorize).map(k => [k, identity])) as unknown as ColorScheme;

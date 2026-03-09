@@ -23,20 +23,29 @@ jobs:
 
       - run: npm ci
 
+      - name: Build TypeScript
+        run: npm run build
+
       - name: Generate test fixtures
         run: node test/create-fixtures.js
 
       - name: Verify document scanning
-        run: node bin/occ.js test/fixtures/
+        run: node dist/bin/occ.js test/fixtures/
 
       - name: Verify JSON output
-        run: node bin/occ.js --format json test/fixtures/
+        run: node dist/bin/occ.js --format json test/fixtures/
 
       - name: Verify CI mode
-        run: node bin/occ.js --ci test/fixtures/
+        run: node dist/bin/occ.js --ci test/fixtures/
 
       - name: Verify by-file mode
-        run: node bin/occ.js --by-file test/fixtures/
+        run: node dist/bin/occ.js --by-file test/fixtures/
 
       - name: Verify no-code mode
-        run: node bin/occ.js --no-code test/fixtures/
+        run: node dist/bin/occ.js --no-code test/fixtures/
+
+      - name: Verify structure extraction
+        run: node dist/bin/occ.js --structure test/fixtures/
+
+      - name: Verify structure JSON output
+        run: node dist/bin/occ.js --structure --format json test/fixtures/

@@ -14,19 +14,22 @@ Thank you for your interest in contributing to OCC! This page mirrors the [CONTR
 git clone https://github.com/cesarandreslopez/occ.git
 cd occ
 npm install
+npm run build
 ```
 
 ### Verify Setup
 
 ```bash
 node test/create-fixtures.js
-node bin/occ.js test/fixtures/
+node dist/bin/occ.js test/fixtures/
 ```
 
 ## Available Commands
 
 ```bash
-npm start                        # Run occ (equivalent to: node bin/occ.js)
+npm run build                    # Compile TypeScript → dist/
+npm run dev                      # Run via tsx (no build needed)
+npm start                        # Run compiled output (node dist/bin/occ.js)
 npm install                      # Install deps + auto-download scc binary
 npm link                         # Make `occ` available globally
 
@@ -34,16 +37,18 @@ npm link                         # Make `occ` available globally
 node test/create-fixtures.js
 
 # Verify document scanning
-node bin/occ.js test/fixtures/
-node bin/occ.js --format json test/fixtures/
-node bin/occ.js --ci test/fixtures/
-node bin/occ.js --by-file test/fixtures/
+node dist/bin/occ.js test/fixtures/
+node dist/bin/occ.js --format json test/fixtures/
+node dist/bin/occ.js --ci test/fixtures/
+node dist/bin/occ.js --by-file test/fixtures/
+node dist/bin/occ.js --structure test/fixtures/
 ```
 
 ## Code Style
 
+- TypeScript with strict mode — all source under `src/` and `bin/` as `.ts`
 - ES modules (`"type": "module"`) throughout
-- No build step — source files run directly via Node.js
+- `npm run build` compiles to `dist/`; `npx tsx` for dev without building
 - No test runner or linter configured yet — contributions to add these are welcome
 - [Conventional Commits](https://www.conventionalcommits.org/) for commit messages
 
@@ -51,7 +56,7 @@ node bin/occ.js --by-file test/fixtures/
 
 1. Create a feature branch from `main`
 2. Make your changes with clear commits
-3. Ensure `node bin/occ.js test/fixtures/` runs successfully
+3. Ensure `npm run build && node dist/bin/occ.js test/fixtures/` runs successfully
 4. Update documentation if needed
 5. Submit a PR with a clear description
 
