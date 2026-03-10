@@ -1,6 +1,9 @@
 import { Packer, Document, Paragraph, TextRun, HeadingLevel } from 'docx';
-import XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
+import * as fs from 'node:fs';
 import { writeFile, mkdir } from 'node:fs/promises';
+
+XLSX.set_fs(fs);
 
 await mkdir('test/fixtures', { recursive: true });
 
