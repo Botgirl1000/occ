@@ -3,7 +3,6 @@ vendor/
 dist/
 site/
 contextful-tlap/
-test/fixtures/
 .claude/
 !.claude/commands/
 .DS_Store
