@@ -142,10 +142,8 @@ export function analyzeCallers(index: CodebaseIndex, functionName: string, file?
   return matches.sort((a, b) => (a.from.path !== b.from.path ? a.from.path.localeCompare(b.from.path) : (a.from.line ?? 0) - (b.from.line ?? 0)));
 }
 
-export function analyzeCallChain(index: CodebaseIndex, fromName: string, toName: string, depth = 5, fromFile?: string, toFile?: string): CallChain[] {
+function searchCallChain(index: CodebaseIndex, starts: CodeNode[], targetIds: Set<string>, depth: number): { chains: CallChain[]; blocked: CallChain[] } {
   const byId = nodeById(index);
-  const starts = resolveFunctionNodes(index, fromName, fromFile);
-  const targets = new Set(resolveFunctionNodes(index, toName, toFile).map(node => node.id));
   const chains: CallChain[] = [];
   const blocked = new Map<string, CallChain>();
 
@@ -178,7 +176,7 @@ export function analyzeCallChain(index: CodebaseIndex, fromName: string, toName:
         if (!next || current.pathNodes.some(node => node.id === next.id)) continue;
         const nextNodes = [...current.pathNodes, next];
         const nextEdges = [...current.pathEdges, edge];
-        if (targets.has(next.id)) {
+        if (targetIds.has(next.id)) {
           chains.push({ nodes: nextNodes, edges: nextEdges, status: 'resolved' });
           continue;
         }
@@ -187,9 +185,29 @@ export function analyzeCallChain(index: CodebaseIndex, fromName: string, toName:
     }
   }
 
-  const resolvedChains = chains.sort((a, b) => a.edges.length - b.edges.length);
-  const blockedChains = [...blocked.values()].sort((a, b) => a.nodes.length - b.nodes.length);
-  return [...resolvedChains, ...blockedChains].slice(0, 20);
+  return {
+    chains: chains.sort((a, b) => a.edges.length - b.edges.length),
+    blocked: [...blocked.values()].sort((a, b) => a.nodes.length - b.nodes.length),
+  };
+}
+
+export function analyzeCallChain(index: CodebaseIndex, fromName: string, toName: string, depth = 5, fromFile?: string, toFile?: string): CallChain[] {
+  const fromNodes = resolveFunctionNodes(index, fromName, fromFile);
+  const toNodes = resolveFunctionNodes(index, toName, toFile);
+  const fromIds = new Set(fromNodes.map(node => node.id));
+  const toIds = new Set(toNodes.map(node => node.id));
+
+  const forward = searchCallChain(index, fromNodes, toIds, depth);
+  if (forward.chains.length > 0) {
+    return [...forward.chains, ...forward.blocked].slice(0, 20);
+  }
+
+  const reverse = searchCallChain(index, toNodes, fromIds, depth);
+  if (reverse.chains.length > 0) {
+    return [...reverse.chains, ...reverse.blocked].slice(0, 20);
+  }
+
+  return [...forward.blocked, ...reverse.blocked].slice(0, 20);
 }
 
 export function analyzeDeps(index: CodebaseIndex, target: string): DependencyAnalysis {

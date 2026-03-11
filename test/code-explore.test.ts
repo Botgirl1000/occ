@@ -73,6 +73,15 @@ test('analyzeCallChain finds bootstrap to formatName path', async () => {
   assert.deepEqual(results[0]?.nodes.map(node => node.name), ['bootstrap', 'createUser', 'saveUser', 'formatName']);
 });
 
+test('analyzeCallChain finds path when arguments are in reverse call order', async () => {
+  const index = await buildCodebaseIndex({ repoRoot: fixtureRoot });
+  const results = analyzeCallChain(index, 'formatName', 'bootstrap', 5);
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0]?.status, 'resolved');
+  assert.deepEqual(results[0]?.nodes.map(node => node.name), ['bootstrap', 'createUser', 'saveUser', 'formatName']);
+});
+
 test('analyzeDeps reports importers and imports for service module', async () => {
   const index = await buildCodebaseIndex({ repoRoot: fixtureRoot });
   const results = analyzeDeps(index, 'src/service');
