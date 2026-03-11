@@ -115,10 +115,19 @@ const CLASS_LIKE_TYPES: Set<CodeNodeType> = new Set(['class', 'interface', 'enum
 
 function resolveClassNodes(index: CodebaseIndex, name: string, file?: string): CodeNode[] {
   const fileFilter = resolveFileFilter(index.repoRoot, file);
-  return index.nodes
+  const matches = index.nodes
     .filter(node => CLASS_LIKE_TYPES.has(node.type) && node.name === name)
     .filter(node => matchesFile(node, fileFilter))
     .sort(compareNodes);
+  if (fileFilter) return matches;
+
+  const classes = matches.filter(node => node.type === 'class');
+  if (classes.length > 0) return classes;
+
+  const interfaces = matches.filter(node => node.type === 'interface');
+  if (interfaces.length > 0) return interfaces;
+
+  return matches;
 }
 
 export function analyzeCalls(index: CodebaseIndex, functionName: string, file?: string): RelationMatch[] {

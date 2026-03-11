@@ -49,7 +49,8 @@ export async function buildCodebaseIndex(options: BuildCodebaseOptions): Promise
   const nodes: CodeNode[] = [];
   const edges: CodeEdge[] = [];
   const functionsByName = new Map<string, CodeNode[]>();
-  const classesByName = new Map<string, CodeNode[]>();
+  const classNodesByName = new Map<string, CodeNode[]>();
+  const interfaceNodesByName = new Map<string, CodeNode[]>();
   const filesByPath = new Map<string, CodeNode>();
   const modulesByName = new Map<string, CodeNode[]>();
   const topLevelSymbolsByFile = new Map<string, Map<string, CodeNode[]>>();
@@ -142,9 +143,11 @@ export async function buildCodebaseIndex(options: BuildCodebaseOptions): Promise
             methodNodesByClassId.set(parentClassNode.id, [...(methodNodesByClassId.get(parentClassNode.id) ?? []), node]);
           }
         }
-      } else if (node.type === 'class' || node.type === 'interface' || node.type === 'enum') {
-        classesByName.set(node.name, [...(classesByName.get(node.name) ?? []), node]);
+      } else if (node.type === 'class') {
+        classNodesByName.set(node.name, [...(classNodesByName.get(node.name) ?? []), node]);
         classByFileAndName.set(classKey(file.path, node.name), node);
+      } else if (node.type === 'interface') {
+        interfaceNodesByName.set(node.name, [...(interfaceNodesByName.get(node.name) ?? []), node]);
       }
     }
 
@@ -219,7 +222,12 @@ export async function buildCodebaseIndex(options: BuildCodebaseOptions): Promise
       if (edgeType === 'inherits') {
         parentNamesByClassId.set(classNode.id, [...(parentNamesByClassId.get(classNode.id) ?? []), inheritance.baseName]);
       }
-      const localCandidates = classesByName.get(inheritance.baseName) ?? [];
+      const candidatePool = edgeType === 'implements'
+        ? interfaceNodesByName
+        : classNode.type === 'interface'
+          ? interfaceNodesByName
+          : classNodesByName;
+      const localCandidates = candidatePool.get(inheritance.baseName) ?? [];
       const exactLocal = localCandidates.filter(candidate => candidate.path === file.path);
       const candidates = exactLocal.length > 0 ? exactLocal : localCandidates;
       const resolved = candidates.length === 1 ? candidates[0] : undefined;
@@ -253,7 +261,7 @@ export async function buildCodebaseIndex(options: BuildCodebaseOptions): Promise
       const inherited: CodeNode[] = [];
       for (const parentName of parents) {
         const directParent = classByFileAndName.get(classKey(classNode.path, parentName));
-        const parentCandidates = directParent ? [directParent] : (classesByName.get(parentName) ?? []);
+        const parentCandidates = directParent ? [directParent] : (classNodesByName.get(parentName) ?? []);
         for (const parentNode of parentCandidates) {
           inherited.push(...resolveClassMethods(parentNode, methodName, true));
         }
@@ -283,7 +291,7 @@ export async function buildCodebaseIndex(options: BuildCodebaseOptions): Promise
         const parentCandidates: CodeNode[] = [];
         for (const parentName of parents) {
           const directParent = callerClassNode ? classByFileAndName.get(classKey(callerClassNode.path, parentName)) : undefined;
-          const baseCandidates = directParent ? [directParent] : (classesByName.get(parentName) ?? []);
+          const baseCandidates = directParent ? [directParent] : (classNodesByName.get(parentName) ?? []);
           for (const parentNode of baseCandidates) {
             parentCandidates.push(...resolveClassMethods(parentNode, call.calleeName, true));
           }
