@@ -154,6 +154,30 @@ export async function buildCodebaseIndex(options: BuildCodebaseOptions): Promise
     topLevelSymbolsByFile.set(file.path, symbolIndex);
   }
 
+  const reExportsByFile = new Map<string, Map<string, string>>();
+  for (const file of parsedFiles) {
+    for (const fileImport of file.imports) {
+      if (!fileImport.isReExport || !fileImport.resolvedPath || !allPaths.has(fileImport.resolvedPath)) continue;
+      let fileMap = reExportsByFile.get(file.path);
+      if (!fileMap) {
+        fileMap = new Map();
+        reExportsByFile.set(file.path, fileMap);
+      }
+      for (const binding of fileImport.bindings) {
+        if (binding.isNamespace) {
+          const sourceSymbols = topLevelSymbolsByFile.get(fileImport.resolvedPath);
+          if (sourceSymbols) {
+            for (const name of sourceSymbols.keys()) {
+              fileMap.set(name, fileImport.resolvedPath);
+            }
+          }
+        } else {
+          fileMap.set(binding.localName, fileImport.resolvedPath);
+        }
+      }
+    }
+  }
+
   for (const file of parsedFiles) {
     const fileNode = filesByPath.get(file.path);
     if (!fileNode) continue;
@@ -298,10 +322,23 @@ export async function buildCodebaseIndex(options: BuildCodebaseOptions): Promise
         }
         if (parentCandidates.length > 0) candidates = parentCandidates;
       } else if (namespaceBinding?.modulePath) {
-        const importedFileSymbols = topLevelSymbolsByFile.get(namespaceBinding.modulePath)?.get(call.calleeName) ?? [];
+        let importedFileSymbols = topLevelSymbolsByFile.get(namespaceBinding.modulePath)?.get(call.calleeName) ?? [];
+        if (importedFileSymbols.length === 0) {
+          const reExportSource = reExportsByFile.get(namespaceBinding.modulePath)?.get(call.calleeName);
+          if (reExportSource) {
+            importedFileSymbols = topLevelSymbolsByFile.get(reExportSource)?.get(call.calleeName) ?? [];
+          }
+        }
         if (importedFileSymbols.length > 0) candidates = importedFileSymbols;
       } else if (directBinding?.modulePath) {
-        const importedFileSymbols = topLevelSymbolsByFile.get(directBinding.modulePath)?.get(directBinding.importedName ?? call.calleeName) ?? [];
+        const symbolName = directBinding.importedName ?? call.calleeName;
+        let importedFileSymbols = topLevelSymbolsByFile.get(directBinding.modulePath)?.get(symbolName) ?? [];
+        if (importedFileSymbols.length === 0) {
+          const reExportSource = reExportsByFile.get(directBinding.modulePath)?.get(symbolName);
+          if (reExportSource) {
+            importedFileSymbols = topLevelSymbolsByFile.get(reExportSource)?.get(symbolName) ?? [];
+          }
+        }
         if (importedFileSymbols.length > 0) candidates = importedFileSymbols;
       } else if (candidates.length === 0) {
         candidates = functionsByName.get(call.calleeName) ?? [];

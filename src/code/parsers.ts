@@ -214,6 +214,27 @@ function parseTypescriptFile(filePath: string, content: string, context: ParserC
           });
         }
       }
+    } else if (ts.isExportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+      const specifier = node.moduleSpecifier.text;
+      const bindings: ParsedImportBinding[] = [];
+      if (node.exportClause && ts.isNamedExports(node.exportClause)) {
+        for (const element of node.exportClause.elements) {
+          bindings.push({
+            localName: element.name.text,
+            importedName: element.propertyName?.text ?? element.name.text,
+          });
+        }
+      } else if (!node.exportClause) {
+        bindings.push({ localName: '*', importedName: '*', isNamespace: true });
+      }
+      imports.push({
+        specifier,
+        line: lineOf(sourceFile, node),
+        kind: isLocalSpecifier(specifier) ? 'local' : 'external',
+        bindings,
+        resolvedPath: resolveImportPath(getLanguageSpec(filePath)?.name ?? 'javascript', context, filePath, specifier),
+        isReExport: true,
+      });
     } else if (ts.isCallExpression(node)) {
       const currentFunction = [...stack].reverse().find(entry => entry.type === 'function');
       if (currentFunction) {
