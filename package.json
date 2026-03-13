@@ -1,6 +1,6 @@
 {
   "name": "@cesarandreslopez/occ",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Office Cloc and Count — scc-style summary tables for office documents",
   "type": "module",
   "bin": {
