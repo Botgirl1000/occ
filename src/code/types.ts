@@ -24,6 +24,7 @@ export interface ParsedImport {
   kind: 'local' | 'external' | 'unresolved';
   bindings: ParsedImportBinding[];
   resolvedPath?: string;
+  isReExport?: boolean;
 }
 
 export interface ParsedSymbol {

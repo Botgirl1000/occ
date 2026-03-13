@@ -21,7 +21,7 @@ const fixtureRoot = path.resolve('test/fixtures/code-explore');
 test('buildCodebaseIndex indexes JS/TS and Python fixtures', async () => {
   const index = await buildCodebaseIndex({ repoRoot: fixtureRoot });
 
-  assert.equal(index.files.length, 18);
+  assert.equal(index.files.length, 21);
   assert.deepEqual(Object.keys(index.capabilities).sort(), ['python', 'typescript']);
   assert.equal(index.capabilities.typescript.calls, true);
   assert.equal(index.capabilities.python.inheritance, true);
@@ -125,7 +125,7 @@ test('JSON payload envelope stays stable for code queries', async () => {
   assert.equal(payload.repo, fixtureRoot);
   assert.equal(payload.query.command, 'code.find.name');
   assert.equal(payload.query.value, 'Greeter');
-  assert.equal(payload.stats.filesIndexed, 18);
+  assert.equal(payload.stats.filesIndexed, 21);
   assert.equal(payload.results[0]?.node.name, 'Greeter');
   assert.equal(payload.results[0]?.node.relativePath, 'python/helpers.py');
   assert.equal(payload.results[0]?.node.language, 'python');
@@ -439,4 +439,17 @@ test('directory dependency aggregation preserves distinct importers for the same
   assert.equal(results.importers.length, 2);
   assert.deepEqual(results.importers.map(item => item.from.relativePath).sort(), ['outside/one.ts', 'outside/two.ts']);
   assert.deepEqual(results.importers.map(item => item.to?.relativePath).sort(), ['src/a.ts', 'src/a.ts']);
+});
+
+test('barrel re-exports resolve calls through index files', async () => {
+  const index = await buildCodebaseIndex({ repoRoot: fixtureRoot });
+
+  // barrel-consumer.ts imports addNumbers from ./barrel (index.ts re-exports from ./math)
+  const calls = analyzeCalls(index, 'computeTotal');
+  const addNumbersCall = calls.find(item => item.edge.targetName === 'addNumbers');
+
+  assert(addNumbersCall, 'computeTotal should have a call to addNumbers');
+  assert.equal(addNumbersCall.edge.status, 'resolved');
+  assert.equal(addNumbersCall.to?.relativePath, 'src/barrel/math.ts');
+  assert.equal(addNumbersCall.to?.name, 'addNumbers');
 });
