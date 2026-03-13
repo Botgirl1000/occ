@@ -217,6 +217,10 @@ Each node in `nodes` includes the structure metadata listed above.
 
 Important nuance: the internal `DocumentStructure.pageMappings` array is **not** currently emitted in CLI JSON output, even though page-derived fields may appear on individual nodes. The docs describe page mappings more broadly than the actual JSON contract exposes.
 
+## Related: Table Extraction
+
+While not a navigation feature per se, `occ table inspect` provides complementary content extraction for structured table data. It shares the same underlying libraries (mammoth for DOCX, JSZip for PPTX/ODT/ODP, SheetJS for XLSX) but targets a different question: "what data is in the tables?" rather than "how is the document structured?"
+
 ## Current Gaps
 
 The current implementation has clear boundaries.

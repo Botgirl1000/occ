@@ -6,6 +6,25 @@ All notable changes to this project will be documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-03-13
+
+> **Note:** All features in OCC are currently experimental. This project cannot be considered stable software yet. APIs, output formats, and command interfaces may change between minor versions.
+
+### Added
+
+- `occ table inspect <file>` — extract structured table content from DOCX, XLSX, PPTX, ODT, and ODP as JSON or tabular output, with auto-detected headers, sample row limits, merged cell support, and per-table token estimates
+- `occ doc inspect <file>` — document metadata, risk flags, content stats, heading structure, and content preview for DOCX and ODT
+- `occ slide inspect <file>` — presentation metadata, risk flags, per-slide inventory, and content preview for PPTX and ODP
+- `occ sheet inspect <file>` — XLSX workbook preflight with sheet inventory, schema preview, risk flags, and token estimates
+- TypeScript interfaces, type aliases, enums, and `implements` clauses are now indexed in `occ code` exploration
+- Directory targets in `occ code analyze deps` now aggregate imports across all files in the directory
+
+### Fixed
+
+- Bidirectional chain analysis: `occ code analyze chain` now searches both directions and labels reverse paths explicitly
+- Code inheritance lookups disambiguate correctly when interfaces and classes share the same name
+- Directory dependency matches are preserved when aggregating across multiple files
+
 ## [0.3.1] - 2026-03-10
 
 ### Fixed
@@ -103,6 +122,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Progress bar with ETA
 - Auto-download of scc binary during `npm install` (skip with `SCC_SKIP_DOWNLOAD=1`)
 
+[0.4.0]: https://github.com/cesarandreslopez/occ/releases/tag/v0.4.0
 [0.3.1]: https://github.com/cesarandreslopez/occ/releases/tag/v0.3.1
 [0.3.0]: https://github.com/cesarandreslopez/occ/releases/tag/v0.3.0
 [0.2.0]: https://github.com/cesarandreslopez/occ/releases/tag/v0.2.0

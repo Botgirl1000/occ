@@ -312,6 +312,98 @@ occ sheet inspect finance.xlsx --format json
 
 The workbook section carries file-level metadata and aggregate risk flags. Each sheet entry carries preflight signals, inferred schema, row samples, and token estimates.
 
+## Table Extraction Output
+
+`occ table inspect` prints an overview followed by per-table sections with sample data.
+
+```bash
+occ table inspect finance.xlsx
+```
+
+Example tabular shape:
+
+```text
+File: /path/to/finance.xlsx
+Format: XLSX
+Size: 17 KB
+Tables Found: 2
+Total Token Estimate: 18
+
+-- Table 1 (Sheet: Sheet1) — 3 rows × 3 cols, 9 cells --
+  Token Estimate: 11
+----------------------------
+  #    Name     Age    City
+  2    Alice    30     NYC
+  3    Bob      25     London
+----------------------------
+
+-- Table 2 (Sheet: Sheet2) — 2 rows × 2 cols, 4 cells --
+  Token Estimate: 7
+-----------------------
+  #    Product    Price
+  2    Widget     9.99
+-----------------------
+```
+
+JSON mode uses a stable command envelope:
+
+```bash
+occ table inspect report.docx --format json
+```
+
+```json
+{
+  "file": "/path/to/report.docx",
+  "query": {
+    "command": "table.inspect",
+    "sampleRows": 20,
+    "headerRow": "auto"
+  },
+  "results": {
+    "file": "/path/to/report.docx",
+    "format": "docx",
+    "size": 8568,
+    "tableCount": 1,
+    "tables": [
+      {
+        "tableIndex": 1,
+        "location": null,
+        "rowCount": 4,
+        "columnCount": 3,
+        "cellCount": 12,
+        "headers": ["Name", "Role", "Status"],
+        "rows": [
+          {
+            "index": 2,
+            "cells": [
+              { "value": "Alice" },
+              { "value": "Engineer" },
+              { "value": "Active" }
+            ]
+          }
+        ],
+        "truncated": false,
+        "tokenEstimate": 15
+      }
+    ],
+    "notes": [],
+    "totalTokenEstimate": 15
+  }
+}
+```
+
+For PDF files, `tables` will be an empty array and `notes` will contain an explanation:
+
+```json
+{
+  "results": {
+    "tables": [],
+    "notes": ["PDF format does not support structural table extraction..."],
+    "totalTokenEstimate": 0
+  }
+}
+```
+
 ## Code Exploration Tabular Output
 
 `occ code` prints command-specific terminal output instead of the document summary tables. The exact layout depends on the query, but the semantics are consistent:

@@ -1,8 +1,12 @@
 # Quick Start
 
-OCC has two entry points:
+> **Experimental:** All features in OCC are currently experimental. APIs, output formats, and command interfaces may change between minor versions.
+
+OCC provides several entry points:
 
 - `occ [directories...]` for document scanning and `scc` code metrics
+- `occ doc inspect`, `occ sheet inspect`, `occ slide inspect` for format-specific document preflight
+- `occ table inspect` for structured table content extraction
 - `occ code ...` for repository exploration against a code graph
 
 ## Your First Scan
@@ -26,7 +30,7 @@ occ code analyze calls bootstrap --path .
 
 Unlike the default scan command, `occ code` targets a repository root with `--path` instead of positional directories.
 
-The strongest support path in `0.3.0` is **JavaScript, TypeScript, and Python**. The code graph is built in memory for each command; there is no database or background service to start.
+The strongest support path is **JavaScript, TypeScript, and Python**. The code graph is built in memory for each command; there is no database or background service to start.
 
 ## Understanding the Output
 
@@ -90,6 +94,26 @@ Repository: src/deps.ts
 -- Unresolved Imports -----------------------------------------------------
   Unresolved Import    Resolution    Specifier
   ./missing            unresolved    ./missing
+```
+
+## Inspecting Individual Documents
+
+OCC can inspect individual files for metadata, content stats, and structured data:
+
+```bash
+# Document metadata, risk flags, and content preview
+occ doc inspect report.docx
+occ doc inspect report.docx --format json
+
+# Spreadsheet schema, risk flags, and sample data
+occ sheet inspect finance.xlsx --format json
+
+# Presentation slide inventory and content preview
+occ slide inspect deck.pptx --format json
+
+# Extract structured table data from any supported format
+occ table inspect finance.xlsx --format json
+occ table inspect report.docx --table 1 --sample-rows 5
 ```
 
 ## Key Flags to Try

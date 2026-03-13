@@ -67,7 +67,7 @@ SCC_SKIP_DOWNLOAD=1 npm install
 
 `occ code` also does not depend on the `scc` binary. The `scc` integration is only used for summary code metrics during the default scan command.
 
-The `0.3.0` release is tuned for:
+The code exploration path is tuned for:
 
 - JavaScript
 - TypeScript

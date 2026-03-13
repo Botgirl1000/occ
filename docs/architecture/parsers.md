@@ -1,11 +1,13 @@
 # Parser System
 
-OCC has two parser families:
+OCC has several parser families:
 
 - **Office document parsers** for metrics and structure extraction
+- **Inspection parsers** for format-specific metadata, risk flags, and content previews (`occ doc/sheet/slide inspect`)
+- **Table extraction parsers** for structured table content (`occ table inspect`)
 - **Code parsers** for the `occ code` graph builder
 
-The document parser system extracts metrics from DOCX, PDF, XLSX, PPTX, and ODF files. The code parser system normalizes supported source languages into one graph model so the CLI can run the same queries across multiple languages.
+The document parser system extracts metrics from DOCX, PDF, XLSX, PPTX, and ODF files. The inspection parsers reuse the same underlying libraries (mammoth, SheetJS, JSZip) for deeper format-specific analysis. The table extraction parsers extract structured table data from document XML or HTML output. The code parser system normalizes supported source languages into one graph model so the CLI can run the same queries across multiple languages.
 
 ## Office Parser Interface
 
@@ -98,7 +100,7 @@ The `occ code` pipeline lives under `src/code/` and normalizes multiple language
 - `build.ts` resolves those parsed facts into nodes and edges
 - `query.ts` answers CLI-level questions from the in-memory graph
 
-The `0.3.0` release is strongest for:
+The strongest support path is currently:
 
 - JavaScript
 - TypeScript

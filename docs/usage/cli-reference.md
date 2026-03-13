@@ -14,13 +14,16 @@ For code exploration, OCC provides a separate namespace:
 occ code <find|analyze> ...
 ```
 
-For spreadsheet preflight, OCC also provides:
+For document, spreadsheet, presentation, and table inspection:
 
 ```bash
+occ doc inspect <file> ...
 occ sheet inspect <file> ...
+occ slide inspect <file> ...
+occ table inspect <file> ...
 ```
 
-`occ [directories...]`, `occ code ...`, and `occ sheet ...` are separate command families. The default scan accepts positional directories. The code exploration path uses `--path <repo-root>`, while spreadsheet inspection targets one XLSX file at a time.
+`occ [directories...]`, `occ code ...`, and the inspect commands (`occ doc`, `occ sheet`, `occ slide`, `occ table`) are separate command families. The default scan accepts positional directories. The code exploration path uses `--path <repo-root>`, while inspect commands target individual files.
 
 ## Flags
 
@@ -156,6 +159,38 @@ occ --no-code docs/
 | `0` | Success |
 | `1` | Error (invalid arguments, scc not found, etc.) |
 
+## Document Inspection Commands
+
+`occ doc inspect` provides document-specific preflight data for DOCX and ODT files.
+
+### `occ doc inspect <file>`
+
+Inspect document metadata, risk flags, content stats, heading structure, and content preview:
+
+```bash
+occ doc inspect report.docx
+occ doc inspect report.docx --format json
+occ doc inspect report.docx --sample-paragraphs 10
+```
+
+Available flags:
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--format <type>` | Output format: `tabular` or `json` | `tabular` |
+| `--output <file>` / `-o` | Write output to file | stdout |
+| `--ci` | ASCII-only output, no colors | off |
+| `--sample-paragraphs <n>` | Maximum preview paragraphs | `5` |
+
+Current document inspection surfaces:
+
+- document properties (title, author, dates, keywords)
+- risk flags (comments, tracked changes, hyperlinks, embedded objects, macros, tables, encryption)
+- content stats (words, pages, paragraphs, characters, tables, images)
+- heading structure with section codes
+- content preview with heading detection
+- token estimates (preview and full document)
+
 ## Spreadsheet Inspection Commands
 
 `occ sheet inspect` provides XLSX-specific preflight data for humans and agents before they serialize workbook contents more deeply.
@@ -197,6 +232,74 @@ Current XLSX inspection surfaces:
 - workbook-scoped and sheet-scoped defined names
 - formula, comment, hyperlink, merge, and external-reference signals
 - per-sheet inferred schema and token estimates
+
+## Presentation Inspection Commands
+
+`occ slide inspect` provides presentation-specific preflight data for PPTX and ODP files.
+
+### `occ slide inspect <file>`
+
+Inspect presentation metadata, risk flags, per-slide inventory, and content preview:
+
+```bash
+occ slide inspect deck.pptx
+occ slide inspect deck.pptx --format json
+occ slide inspect deck.pptx --slide 3
+```
+
+Available flags:
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--format <type>` | Output format: `tabular` or `json` | `tabular` |
+| `--output <file>` / `-o` | Write output to file | stdout |
+| `--ci` | ASCII-only output, no colors | off |
+| `--sample-slides <n>` | Preview slide count | `3` |
+| `--slide <number>` | Inspect a specific slide (1-based index) | all slides |
+
+Current presentation inspection surfaces:
+
+- presentation properties (title, author, dates)
+- risk flags (comments, speaker notes, hyperlinks, embedded media, animations, macros, charts, tables)
+- per-slide inventory (title, word count, notes, images, tables, charts)
+- content preview for sample slides
+- token estimates (preview and full presentation)
+
+## Table Extraction Commands
+
+`occ table inspect` extracts structured table content from DOCX, XLSX, PPTX, ODT, and ODP documents. PDF files return an empty result with an informative note.
+
+### `occ table inspect <file>`
+
+Extract table data with auto-detected headers, merged cell handling, and sample row limits:
+
+```bash
+occ table inspect report.docx
+occ table inspect finance.xlsx --format json
+occ table inspect finance.xlsx --table 1 --sample-rows 10
+occ table inspect report.docx --header-row none
+```
+
+Available flags:
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--format <type>` | Output format: `tabular` or `json` | `tabular` |
+| `--output <file>` / `-o` | Write output to file | stdout |
+| `--ci` | ASCII-only output, no colors | off |
+| `--table <n>` | Extract a specific table (1-based index) | all tables |
+| `--sample-rows <n>` | Maximum rows per table | `20` |
+| `--header-row <mode>` | `auto`, `none`, or a 1-based row number | `auto` |
+
+Current table extraction covers:
+
+- DOCX tables via mammoth HTML parsing (colspan/rowspan preserved)
+- XLSX sheets treated as tables with merged cell support
+- PPTX tables from slide XML (`<a:tbl>` elements)
+- ODT tables from `content.xml` (`<table:table>` elements)
+- ODP tables from `content.xml` with per-slide context
+- PDF returns `tables: []` with a note explaining the limitation
+- per-table and total token estimates
 
 ## Code Exploration Commands
 

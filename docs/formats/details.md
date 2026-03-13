@@ -14,6 +14,8 @@ Detailed breakdown of how OCC extracts metrics from each format.
 
 **Structure extraction:** mammoth converts DOCX to HTML (mapping `Heading 1`–`Heading 6` styles to `<h1>`–`<h6>`), then [turndown](https://www.npmjs.com/package/turndown) converts to markdown with `#`–`######` headers. This gives accurate heading hierarchy without parsing DOCX XML directly.
 
+**Table extraction:** `occ table inspect` parses `<table>/<tr>/<td>` elements from mammoth's HTML output, preserving `colspan` and `rowspan` attributes for merged cells. Headers are auto-detected from `<th>` tags or unique first-row values.
+
 !!! note "Page estimation"
     DOCX files don't store reliable page counts. OCC estimates pages at 250 words per page, which is a standard publishing convention.
 
@@ -44,6 +46,8 @@ Word and page counts are not extracted from spreadsheets.
 
 **Spreadsheet inspection:** `occ sheet inspect <file>` uses the same SheetJS workbook model to expose workbook properties, hidden sheet state, defined names, formula/comment/hyperlink signals, inferred schema, and lightweight row samples for agent-oriented preflight.
 
+**Table extraction:** `occ table inspect` treats each sheet as a table, using the same `getCell()` and `renderCell()` utilities as sheet inspection. Merged cells are handled via the `!merges` array, with the top-left cell carrying colspan/rowspan values.
+
 ## PowerPoint (.pptx)
 
 **Parser:** [JSZip](https://www.npmjs.com/package/jszip) + [officeparser](https://www.npmjs.com/package/officeparser)
@@ -54,6 +58,8 @@ Word and page counts are not extracted from spreadsheets.
 - **Slides** — counted by inspecting the ZIP structure for `ppt/slides/slideN.xml` entries
 
 **Structure extraction:** Slides are enumerated from the ZIP in order and `# Slide N` headers are inserted, creating a flat one-level structure.
+
+**Table extraction:** `occ table inspect` finds `<a:tbl>` elements in slide XML, extracting text from `<a:t>` tags within `<a:tc>` cells. `gridSpan` and `rowSpan` attributes are read for merged cells. Each table's location is reported as `Slide N`.
 
 ## ODT (OpenDocument Text)
 
@@ -66,6 +72,8 @@ Word and page counts are not extracted from spreadsheets.
 - **Paragraphs** — text split on newlines, filtered for non-empty segments
 
 **Structure extraction:** Text is extracted via officeparser. Heading detection is best-effort since ODT formatting may not always be preserved in the plain text output.
+
+**Table extraction:** `occ table inspect` parses `<table:table>` elements from `content.xml`, extracting text from `<table:table-cell>` elements. `table:number-columns-spanned` and `table:number-rows-spanned` attributes are read for merged cells.
 
 ## ODS (OpenDocument Spreadsheet)
 
@@ -87,3 +95,5 @@ Word and page counts are not extracted from spreadsheets.
 - **Slides** — counted by matching `<draw:page` elements in `content.xml`
 
 **Structure extraction:** Similar to PPTX — slides are counted from `content.xml` and `# Slide N` headers are inserted.
+
+**Table extraction:** `occ table inspect` parses `<table:table>` elements from `content.xml` within each `<draw:page>`, providing per-slide context for each table's location.

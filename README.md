@@ -9,25 +9,31 @@
 </p>
 
 <p align="center">
-  <strong>Office Cloc and Count</strong> — document metrics, structure extraction, and code exploration for real repositories.
+  <strong>Office Cloc and Count</strong> — document metrics, structure extraction, content inspection, and code exploration for real repositories.
 </p>
+
+> **Experimental:** All features in OCC are currently experimental. This project cannot be considered stable software yet. APIs, output formats, and command interfaces may change between minor versions.
 
 ## What is this?
 
-OCC started as a way to make office documents visible in the same workflows that already work well for code metrics tools like `scc` and `cloc`. In `0.3.0`, it also adds an on-demand code exploration surface under `occ code`, so the same CLI can now:
+OCC started as a way to make office documents visible in the same workflows that already work well for code metrics tools like `scc` and `cloc`. It has since grown into a multi-purpose CLI that can:
 
 - scan office documents for word/page/sheet/slide metrics
 - extract document heading structure for navigation and RAG-style use cases
-- inspect XLSX workbooks for sheet inventory, schema preview, and lightweight samples before deeper reading
+- inspect documents (`occ doc inspect`), spreadsheets (`occ sheet inspect`), and presentations (`occ slide inspect`) for metadata, risk flags, and content previews
+- extract structured table content from documents (`occ table inspect`)
 - summarize code metrics through `scc`
-- explore JavaScript, TypeScript, and Python repositories with symbol search, call analysis, dependency inspection, and inheritance queries
+- explore JavaScript, TypeScript, and Python repositories with symbol search, call analysis, dependency inspection, and inheritance queries (`occ code`)
 
 ## Features
 
 - **Office document metrics** — words, pages, paragraphs, slides, sheets, rows, cells
 - **Seven formats supported** — DOCX, XLSX, PPTX, PDF, ODT, ODS, ODP
 - **Document structure extraction** — `--structure` parses heading hierarchy into a navigable tree with dotted section codes (1, 1.1, 1.2, ...)
-- **Spreadsheet preflight via `occ sheet inspect`** — workbook properties, hidden sheets, names, formulas, links, comments, schema preview, and token estimates for XLSX
+- **Document inspection via `occ doc inspect`** — metadata, risk flags, content stats, heading structure, and content preview for DOCX and ODT
+- **Spreadsheet inspection via `occ sheet inspect`** — workbook properties, hidden sheets, names, formulas, links, comments, schema preview, and token estimates for XLSX
+- **Presentation inspection via `occ slide inspect`** — metadata, risk flags, per-slide inventory, and content preview for PPTX and ODP
+- **Table extraction via `occ table inspect`** — structured table content from DOCX, XLSX, PPTX, ODT, and ODP with auto-detected headers, sample row limits, and merged cell support
 - **Code metrics via scc** — auto-detects code files and integrates scc output
 - **Code exploration via `occ code`** — JS/TS and Python-first symbol lookup, content search, callers/callees, dependency categories, inheritance, and ambiguity-aware chains
 - **Multiple output modes** — grouped by type, per-file breakdown, or JSON
@@ -82,9 +88,21 @@ occ --structure docs/
 # Structure as JSON
 occ --structure --format json docs/
 
+# Inspect a document for metadata, risk flags, and content preview
+occ doc inspect report.docx
+occ doc inspect report.docx --format json
+
 # Inspect an XLSX workbook before reading its contents deeply
 occ sheet inspect finance.xlsx
 occ sheet inspect finance.xlsx --format json --sample-rows 3 --max-columns 12
+
+# Inspect a presentation for slide inventory and content preview
+occ slide inspect deck.pptx
+occ slide inspect deck.pptx --format json --slide 3
+
+# Extract structured table data from documents
+occ table inspect report.docx --format json
+occ table inspect finance.xlsx --table 1 --sample-rows 10
 
 # Explore JS/TS and Python code
 occ code find name UserService --path .
@@ -178,7 +196,7 @@ Scanned 23 documents (56,750 words, 201 pages) in 120ms
 
 `occ code` adds on-demand code exploration without changing the existing document-scan workflow. It builds an in-memory repository graph for each command and does not require a database, daemon, or background indexer.
 
-The first-class support path in `0.3.0` is **JavaScript, TypeScript, and Python**. Other languages may be discovered and partially parsed, but the current resolver, fixtures, and output contracts are intentionally optimized around JS/TS and Python behavior.
+The first-class support path is **JavaScript, TypeScript, and Python**. Other languages may be discovered and partially parsed, but the current resolver, fixtures, and output contracts are intentionally optimized around JS/TS and Python behavior.
 
 ```bash
 # Exact symbol lookup
@@ -213,6 +231,30 @@ Highlights of the current code exploration behavior:
 
 All `occ code` commands support `--format tabular|json`. Most symbol-targeted commands also support `--file` for disambiguation, and JSON output includes repository metadata, query metadata, results, repository stats, and per-language capability flags.
 
+## Document Inspection
+
+`occ doc inspect` extracts metadata, risk flags, content stats, heading structure, and a content preview from DOCX and ODT documents.
+
+```bash
+# Document overview with content preview
+occ doc inspect report.docx
+
+# Machine-readable payload
+occ doc inspect report.docx --format json
+
+# More paragraphs in the preview
+occ doc inspect report.docx --sample-paragraphs 10
+```
+
+Current document inspection surfaces:
+
+- **Document properties** — title, author, dates, keywords
+- **Risk flags** — comments, tracked changes, hyperlinks, embedded objects, macros, tables, encryption
+- **Content stats** — words, pages, paragraphs, characters, tables, images
+- **Heading structure** — tree with section codes and depth
+- **Content preview** — first N paragraphs with heading detection
+- **Token estimates** — preview and full-document token estimates
+
 ## Spreadsheet Inspection
 
 `occ sheet inspect` is a lightweight XLSX preflight command aimed at both humans and agents. It helps answer "is this workbook worth reading in depth?" before spending tokens serializing cells or opening the file in Excel.
@@ -235,6 +277,57 @@ Current XLSX inspection highlights:
 - **Schema preview** — detected header row, inferred column types, coverage ratios, example values
 - **Lightweight sampling** — small row previews designed for preflight rather than full extraction
 - **Token estimates** — sample and full-sheet token estimates to guide downstream agent reads
+
+## Presentation Inspection
+
+`occ slide inspect` provides presentation metadata, risk flags, per-slide inventory, and content previews for PPTX and ODP files.
+
+```bash
+# Presentation overview with slide preview
+occ slide inspect deck.pptx
+
+# Machine-readable payload
+occ slide inspect deck.pptx --format json
+
+# Inspect a specific slide
+occ slide inspect deck.pptx --slide 3
+```
+
+Current presentation inspection surfaces:
+
+- **Presentation properties** — title, author, dates
+- **Risk flags** — comments, speaker notes, hyperlinks, embedded media, animations, macros, charts, tables
+- **Slide inventory** — per-slide title, word count, notes, images, tables, charts
+- **Content preview** — text preview for sample slides
+- **Token estimates** — preview and full-presentation token estimates
+
+## Table Extraction
+
+`occ table inspect` extracts structured table content from DOCX, XLSX, PPTX, ODT, and ODP documents. For AI agents, this is the primary way to read financial summaries, comparison matrices, and data tables without parsing raw XML.
+
+```bash
+# Extract all tables as JSON
+occ table inspect report.docx --format json
+
+# Tabular preview of table content
+occ table inspect finance.xlsx
+
+# Extract a specific table
+occ table inspect finance.xlsx --table 1
+
+# Limit sample rows
+occ table inspect report.docx --sample-rows 5
+```
+
+Current table extraction highlights:
+
+- **Multi-format support** — DOCX (via mammoth HTML), XLSX (via SheetJS), PPTX (from slide XML), ODT and ODP (from content.xml)
+- **Auto-detected headers** — first row is treated as headers when values are unique strings
+- **Merged cell support** — colspan and rowspan are preserved in the output
+- **Sample row limits** — configurable maximum rows per table (default: 20)
+- **Table filtering** — extract a specific table by index with `--table N`
+- **Token estimates** — per-table and total token estimates
+- **PDF graceful degradation** — returns empty tables with an informative note instead of unreliable heuristic output
 
 ## Documentation
 
@@ -263,7 +356,10 @@ Tools like `scc`, `cloc`, and `tokei` give you instant visibility into codebases
 - **Context budgeting** — LLMs have finite context windows. OCC's word and page counts let agents estimate how much of a document set they can ingest before hitting token limits
 - **Prioritization** — an agent deciding which documents to read can use OCC's JSON output to rank files by size, word count, or type, focusing on the most relevant content first
 - **RAG chunk mapping** — `--structure --format json` outputs heading trees with character offsets, enabling chunk-to-section mapping, scoped retrieval, and citation paths in RAG pipelines
+- **Document triage** — `occ doc inspect --format json` surfaces risk flags, content stats, structure, and token estimates before an agent reads the full document
 - **Spreadsheet triage** — `occ sheet inspect --format json` exposes sheet visibility, formulas, links, comments, schema hints, and token estimates before an agent expands workbook contents
+- **Presentation triage** — `occ slide inspect --format json` provides slide inventory, risk flags, and content previews for quick assessment
+- **Table extraction** — `occ table inspect --format json` extracts structured table data (headers, rows, cells) from documents, giving agents direct access to tabular content without parsing raw XML
 - **Repository mapping** — agents exploring an unfamiliar codebase can combine `occ --format json` for document inventory with `occ code ... --format json` for symbol and relationship data
 - **Pipeline integration** — JSON output pipes directly into agent toolchains for automated document analysis, summarization, or compliance checking
 

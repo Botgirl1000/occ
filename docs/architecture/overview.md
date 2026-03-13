@@ -1,8 +1,10 @@
 # Architecture Overview
 
-OCC is a TypeScript ES module CLI with two distinct execution paths:
+OCC is a TypeScript ES module CLI with several execution paths:
 
 - the default `occ [directories...]` pipeline for document metrics, structure extraction, and `scc` code metrics
+- the `occ doc/sheet/slide inspect` commands for format-specific document preflight
+- the `occ table inspect` command for structured table content extraction
 - the `occ code ...` pipeline for on-demand repository exploration over an in-memory code graph
 
 Source files live as `.ts` under `src/` and `bin/`, compiled to `dist/` via `tsc`. `scripts/postinstall.js` remains plain JS because it runs before dev dependencies are available.
@@ -22,6 +24,10 @@ graph LR
     B --> J[src/structure/extract.ts]
     B --> K[src/output/tree.ts]
     B --> L[src/code/command.ts]
+    B --> L2[src/doc/command.ts]
+    B --> L3[src/sheet/command.ts]
+    B --> L4[src/slide/command.ts]
+    B --> L5[src/table/command.ts]
     D --> M[src/parsers/docx.ts]
     D --> N[src/parsers/pdf.ts]
     D --> O[src/parsers/xlsx.ts]
@@ -82,7 +88,7 @@ The `occ code` path is intentionally simple at runtime:
 4. run one query against the graph
 5. format the result as a terminal view or JSON payload
 
-The graph is rebuilt for each command. There is no daemon, cache, or persistent index in `0.3.0`.
+The graph is rebuilt for each command. There is no daemon, cache, or persistent index.
 
 ## Source Tree
 
@@ -115,6 +121,34 @@ occ/
 │   │   ├── query.ts        # Symbol and relationship queries
 │   │   ├── output.ts       # Tabular + JSON formatting for code queries
 │   │   └── types.ts        # Graph/query/output types
+│   ├── doc/
+│   │   ├── command.ts      # `occ doc` command registration
+│   │   ├── inspect.ts      # Document format router
+│   │   ├── inspect-docx.ts # DOCX metadata + content extraction
+│   │   ├── inspect-odt.ts  # ODT metadata + content extraction
+│   │   ├── output.ts       # Tabular + JSON formatting
+│   │   └── types.ts        # Document inspection types
+│   ├── sheet/
+│   │   ├── command.ts      # `occ sheet` command registration
+│   │   ├── inspect.ts      # XLSX workbook inspection
+│   │   ├── output.ts       # Tabular + JSON formatting
+│   │   └── types.ts        # Sheet inspection types
+│   ├── slide/
+│   │   ├── command.ts      # `occ slide` command registration
+│   │   ├── inspect.ts      # Presentation format router
+│   │   ├── inspect-pptx.ts # PPTX metadata + slide extraction
+│   │   ├── output.ts       # Tabular + JSON formatting
+│   │   └── types.ts        # Slide inspection types
+│   ├── table/
+│   │   ├── command.ts      # `occ table` command registration
+│   │   ├── inspect.ts      # Table format router
+│   │   ├── inspect-docx.ts # DOCX table extraction via mammoth HTML
+│   │   ├── inspect-xlsx.ts # XLSX table extraction via SheetJS
+│   │   ├── inspect-pptx.ts # PPTX table extraction from slide XML
+│   │   ├── inspect-odt.ts  # ODT table extraction from content.xml
+│   │   ├── inspect-odp.ts  # ODP table extraction from content.xml
+│   │   ├── output.ts       # Tabular + JSON formatting
+│   │   └── types.ts        # Table extraction types
 │   ├── stats.ts            # Aggregation, sorting, column detection
 │   ├── scc.ts              # Finds/invokes vendored or PATH scc binary
 │   ├── progress.ts         # Progress bar with ETA
@@ -145,3 +179,5 @@ occ/
 - **JS/TS + Python first** — the current resolver and fixtures are optimized around JavaScript, TypeScript, and Python behavior
 - **Explicit ambiguity** — code queries prefer `resolved` / `ambiguous` / `unresolved` states over pretending uncertain edges are definitive
 - **Human + JSON parity** — ambiguity details, dependency categories, and chain-blocking reasons are surfaced in both terminal and JSON output
+- **Format-specific inspection** — `occ doc`, `occ sheet`, `occ slide`, and `occ table` provide deep inspection of individual files with format-aware extraction, reusing existing parser dependencies (mammoth, SheetJS, JSZip)
+- **Table extraction via existing parsers** — `occ table inspect` extracts structured table data without new dependencies by parsing mammoth HTML output (DOCX), SheetJS cell data (XLSX), slide XML (PPTX), and content.xml (ODT/ODP)

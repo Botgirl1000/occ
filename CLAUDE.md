@@ -45,6 +45,19 @@ bin/occ.ts → src/cli.ts (orchestrator)
                │    ├→ types.ts          — StructureNode, DocumentStructure, PageMapping
                │    ├→ extract.ts        — header extraction + tree building
                │    └→ index.ts          — re-exports
+               ├→ src/doc/command.ts     — `occ doc inspect` for DOCX/ODT
+               ├→ src/sheet/command.ts   — `occ sheet inspect` for XLSX
+               ├→ src/slide/command.ts   — `occ slide inspect` for PPTX/ODP
+               ├→ src/table/
+               │    ├→ command.ts        — `occ table inspect` CLI registration
+               │    ├→ inspect.ts        — format router
+               │    ├→ inspect-docx.ts   — DOCX tables via mammoth HTML
+               │    ├→ inspect-xlsx.ts   — XLSX tables via SheetJS
+               │    ├→ inspect-pptx.ts   — PPTX tables from slide XML
+               │    ├→ inspect-odt.ts    — ODT tables from content.xml
+               │    ├→ inspect-odp.ts    — ODP tables from content.xml
+               │    ├→ output.ts         — tabular + JSON formatters
+               │    └→ types.ts          — table extraction types
                └→ src/output/
                     ├→ tabular.ts        — cli-table3 terminal tables
                     ├→ json.ts           — JSON output
@@ -67,3 +80,7 @@ bin/occ.ts → src/cli.ts (orchestrator)
 - Run `node dist/bin/occ.js --format json test/fixtures/` to verify JSON output
 - Run `node dist/bin/occ.js --structure test/fixtures/` to verify structure extraction
 - Run `node dist/bin/occ.js --structure --format json test/fixtures/` to verify structure JSON
+- Run `node dist/bin/occ.js doc inspect test/fixtures/sample.docx` to verify document inspection
+- Run `node dist/bin/occ.js sheet inspect test/fixtures/sample.xlsx` to verify sheet inspection
+- Run `node dist/bin/occ.js slide inspect test/fixtures/sample.pptx` to verify slide inspection
+- Run `node dist/bin/occ.js table inspect test/fixtures/sample.xlsx --format json` to verify table extraction

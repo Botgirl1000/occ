@@ -9,27 +9,33 @@
 </p>
 
 <p align="center">
-  <strong>Office Cloc and Count</strong> — document metrics, structure extraction, and code exploration for real repositories.
+  <strong>Office Cloc and Count</strong> — document metrics, structure extraction, content inspection, and code exploration for real repositories.
 </p>
 
 ---
 
-OCC now has two primary command families:
+> **Experimental:** All features in OCC are currently experimental. This project cannot be considered stable software yet. APIs, output formats, and command interfaces may change between minor versions.
+
+OCC provides several command families:
 
 - `occ [directories...]` for office document metrics, structure extraction, and `scc` code metrics
+- `occ doc inspect`, `occ sheet inspect`, `occ slide inspect` for format-specific document preflight
+- `occ table inspect` for structured table content extraction
 - `occ code ...` for on-demand repository exploration over an in-memory code graph
-
-The `0.3.0` release is strongest for **JavaScript, TypeScript, and Python** in the `occ code` path. It keeps the original document workflow intact and adds symbol search, call analysis, dependency inspection, inheritance queries, and ambiguity-aware chain reporting.
 
 ## Feature Highlights
 
 - **Office document metrics** for DOCX, XLSX, PPTX, PDF, ODT, ODS, and ODP
 - **Document structure extraction** with `--structure`
+- **Document inspection** via `occ doc inspect` — metadata, risk flags, content stats, and preview for DOCX/ODT
+- **Spreadsheet inspection** via `occ sheet inspect` — schema preview, risk flags, and token estimates for XLSX
+- **Presentation inspection** via `occ slide inspect` — slide inventory, risk flags, and content preview for PPTX/ODP
+- **Table extraction** via `occ table inspect` — structured table data from DOCX, XLSX, PPTX, ODT, and ODP
 - **Code metrics via scc** during default scans
 - **Code exploration via `occ code`** with exact search, pattern search, content search, callers/callees, dependency categories, inheritance, and blocked-chain reporting
 - **Explicit relationship status** through `resolved`, `ambiguous`, and `unresolved`
 - **Dependency categorization** into local, external, and unresolved imports
-- **JSON-first automation support** across both command families
+- **JSON-first automation support** across all command families
 - **Zero required services** for `occ code`; no database or daemon
 
 ## Why OCC?
@@ -49,6 +55,8 @@ Tools like `scc`, `cloc`, and `tokei` give you fast visibility into code. OCC ex
 ### For AI Agents
 
 - **Context budgeting** — estimate document volume before ingestion
+- **Document triage** — inspect documents, spreadsheets, and presentations for risk flags and token estimates before deep reading
+- **Table extraction** — extract structured table data directly from documents without parsing raw XML
 - **Repository mapping** — combine `occ --format json` for document inventory with `occ code ... --format json` for symbol and relationship data
 - **RAG chunk mapping** — use `--structure --format json` to recover section boundaries and character offsets
 
@@ -71,6 +79,12 @@ occ docs/
 
 # Document structure
 occ --structure docs/
+
+# Inspect a document for metadata and risk flags
+occ doc inspect report.docx --format json
+
+# Extract tables from a spreadsheet
+occ table inspect finance.xlsx --format json
 
 # Exact symbol lookup
 occ code find name UserService --path .
