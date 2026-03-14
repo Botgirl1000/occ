@@ -1,4 +1,5 @@
 import { basename } from 'node:path';
+import { z } from 'zod';
 
 const BAR_WIDTH = 20;
 
@@ -7,11 +8,12 @@ export interface ProgressBar {
   done(): void;
 }
 
-export interface ProgressOptions {
-  total: number;
-  label?: string;
-  enabled?: boolean;
-}
+export const ProgressOptionsSchema = z.object({
+  total: z.number(),
+  label: z.string().optional(),
+  enabled: z.boolean().optional(),
+});
+export type ProgressOptions = z.infer<typeof ProgressOptionsSchema>;
 
 function noop() {}
 const noopProgress: ProgressBar = { update: noop, done: noop };

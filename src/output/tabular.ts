@@ -1,5 +1,6 @@
 import Table from 'cli-table3';
 import chalk from 'chalk';
+import { z } from 'zod';
 import { formatBytes, formatNumber } from '../utils.js';
 import type { AggregateResult, StatsRow, ColumnVisibility } from '../stats.js';
 import type { SccLanguage } from '../scc.js';
@@ -16,10 +17,11 @@ interface ColorScheme {
   dim: ColorFn;
 }
 
-export interface TableOptions {
-  ci?: boolean;
-  byFile?: boolean;
-}
+export const TableOptionsSchema = z.object({
+  ci: z.boolean().optional(),
+  byFile: z.boolean().optional(),
+});
+export type TableOptions = z.infer<typeof TableOptionsSchema>;
 
 export function formatDocumentTable(stats: AggregateResult, options: TableOptions = {}): string {
   const { ci = false } = options;

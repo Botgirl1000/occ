@@ -1,20 +1,24 @@
 import fg from 'fast-glob';
 import { stat } from 'node:fs/promises';
+import { z } from 'zod';
 import { OFFICE_EXTENSIONS } from './utils.js';
+import { FileEntrySchema, SkippedEntrySchema } from './types.js';
 import type { FileEntry, SkippedEntry } from './types.js';
 
-export interface FindFilesOptions {
-  includeExt?: string;
-  excludeExt?: string;
-  excludeDir?: string[];
-  noGitignore?: boolean;
-  largeFileLimit?: number;
-}
+export const FindFilesOptionsSchema = z.object({
+  includeExt: z.string().optional(),
+  excludeExt: z.string().optional(),
+  excludeDir: z.array(z.string()).optional(),
+  noGitignore: z.boolean().optional(),
+  largeFileLimit: z.number().optional(),
+});
+export type FindFilesOptions = z.infer<typeof FindFilesOptionsSchema>;
 
-export interface FindFilesResult {
-  files: FileEntry[];
-  skipped: SkippedEntry[];
-}
+export const FindFilesResultSchema = z.object({
+  files: z.array(FileEntrySchema),
+  skipped: z.array(SkippedEntrySchema),
+});
+export type FindFilesResult = z.infer<typeof FindFilesResultSchema>;
 
 export async function findFiles(directories: string[], options: FindFilesOptions = {}): Promise<FindFilesResult> {
   const {

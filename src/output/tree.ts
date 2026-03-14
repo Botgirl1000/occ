@@ -1,6 +1,8 @@
 import chalk from 'chalk';
 import path from 'node:path';
+import { z } from 'zod';
 import { sectionHeader, stripAnsi, tableChars } from './tabular.js';
+import { DocumentStructureSchema } from '../structure/types.js';
 import type { StructureNode, DocumentStructure } from '../structure/types.js';
 
 type ColorFn = (s: string) => string;
@@ -26,15 +28,17 @@ const colorize: ColorScheme = {
 const identity: ColorFn = (s) => s;
 const noColor: ColorScheme = Object.fromEntries(Object.keys(colorize).map(k => [k, identity])) as unknown as ColorScheme;
 
-export interface StructureResult {
-  file: string;
-  structure: DocumentStructure;
-  markdown: string;
-}
+export const StructureResultSchema = z.object({
+  file: z.string(),
+  structure: DocumentStructureSchema,
+  markdown: z.string(),
+});
+export type StructureResult = z.infer<typeof StructureResultSchema>;
 
-export interface TreeOptions {
-  ci?: boolean;
-}
+export const TreeOptionsSchema = z.object({
+  ci: z.boolean().optional(),
+});
+export type TreeOptions = z.infer<typeof TreeOptionsSchema>;
 
 function formatPageRange(node: StructureNode): string {
   if (node.startPage == null) return '';

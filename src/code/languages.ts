@@ -1,13 +1,18 @@
 import path from 'node:path';
 import { existsSync } from 'node:fs';
-import type { CodeCapabilities } from './types.js';
+import { z } from 'zod';
+import { CodeCapabilitiesSchema } from './types.js';
 
-export interface LanguageSpec {
-  name: string;
-  extensions: string[];
-  parser: 'typescript' | 'python' | 'go' | 'rust' | 'generic';
-  capabilities: CodeCapabilities;
-}
+export const ParserTypeSchema = z.enum(['typescript', 'python', 'go', 'rust', 'generic']);
+export type ParserType = z.infer<typeof ParserTypeSchema>;
+
+export const LanguageSpecSchema = z.object({
+  name: z.string(),
+  extensions: z.array(z.string()),
+  parser: ParserTypeSchema,
+  capabilities: CodeCapabilitiesSchema,
+});
+export type LanguageSpec = z.infer<typeof LanguageSpecSchema>;
 
 export const LANGUAGE_SPECS: LanguageSpec[] = [
   {

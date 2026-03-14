@@ -1,12 +1,14 @@
 import fg from 'fast-glob';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { z } from 'zod';
 import { CODE_EXTENSIONS, normalizePath } from './languages.js';
 
-export interface DiscoverCodeOptions {
-  excludeDir?: string[];
-  noGitignore?: boolean;
-}
+export const DiscoverCodeOptionsSchema = z.object({
+  excludeDir: z.array(z.string()).optional(),
+  noGitignore: z.boolean().optional(),
+});
+export type DiscoverCodeOptions = z.infer<typeof DiscoverCodeOptionsSchema>;
 
 async function loadGitignorePatterns(repoRoot: string): Promise<string[]> {
   try {

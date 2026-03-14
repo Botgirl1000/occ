@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { z } from 'zod';
 
 export function countWords(text: string): number {
   if (!text) return 0;
@@ -36,7 +37,8 @@ export const OFFICE_EXTENSIONS: string[] = Object.keys(EXTENSION_TO_TYPE);
 
 export const METRIC_FIELDS = ['words', 'pages', 'paragraphs', 'sheets', 'rows', 'cells', 'slides'] as const;
 
-export type MetricField = typeof METRIC_FIELDS[number];
+export const MetricFieldSchema = z.enum(METRIC_FIELDS);
+export type MetricField = z.infer<typeof MetricFieldSchema>;
 
 export function hasKey(field: string): string {
   return `has${field[0].toUpperCase()}${field.slice(1)}`;

@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { z } from 'zod';
 import { METRIC_FIELDS, hasKey } from './utils.js';
 import type { ParseResult } from './types.js';
 
@@ -30,10 +31,11 @@ export interface AggregateResult {
   mode: string;
 }
 
-export interface AggregateOptions {
-  byFile?: boolean;
-  sort?: string;
-}
+export const AggregateOptionsSchema = z.object({
+  byFile: z.boolean().optional(),
+  sort: z.string().optional(),
+});
+export type AggregateOptions = z.infer<typeof AggregateOptionsSchema>;
 
 const SUM_FIELDS = ['files', ...METRIC_FIELDS, 'size'] as const;
 
