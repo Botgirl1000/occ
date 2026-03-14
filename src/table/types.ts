@@ -1,39 +1,49 @@
-export interface TableCell {
-  value: string;
-  colSpan?: number;   // only if > 1
-  rowSpan?: number;   // only if > 1
-}
+import { z } from 'zod';
 
-export interface ExtractedTable {
-  tableIndex: number;            // 1-based
-  location: string | null;       // "Slide 3", "Sheet: Sales", null for DOCX body
-  rowCount: number;
-  columnCount: number;
-  cellCount: number;
-  headers: string[] | null;      // auto-detected first row, or null
-  rows: { index: number; cells: TableCell[] }[];
-  truncated: boolean;
-  tokenEstimate: number;
-}
+export const TableCellSchema = z.object({
+  value: z.string(),
+  colSpan: z.number().optional(),
+  rowSpan: z.number().optional(),
+});
+export type TableCell = z.infer<typeof TableCellSchema>;
 
-export interface TableInspectionResult {
-  file: string;
-  format: 'docx' | 'xlsx' | 'pptx' | 'odt' | 'odp' | 'pdf';
-  size: number;
-  tableCount: number;
-  tables: ExtractedTable[];
-  notes: string[];
-  totalTokenEstimate: number;
-}
+export const ExtractedTableSchema = z.object({
+  tableIndex: z.number(),
+  location: z.string().nullable(),
+  rowCount: z.number(),
+  columnCount: z.number(),
+  cellCount: z.number(),
+  headers: z.array(z.string()).nullable(),
+  rows: z.array(z.object({
+    index: z.number(),
+    cells: z.array(TableCellSchema),
+  })),
+  truncated: z.boolean(),
+  tokenEstimate: z.number(),
+});
+export type ExtractedTable = z.infer<typeof ExtractedTableSchema>;
 
-export interface TableInspectPayload {
-  file: string;
-  query: Record<string, unknown>;
-  results: TableInspectionResult;
-}
+export const TableInspectionResultSchema = z.object({
+  file: z.string(),
+  format: z.enum(['docx', 'xlsx', 'pptx', 'odt', 'odp', 'pdf']),
+  size: z.number(),
+  tableCount: z.number(),
+  tables: z.array(ExtractedTableSchema),
+  notes: z.array(z.string()),
+  totalTokenEstimate: z.number(),
+});
+export type TableInspectionResult = z.infer<typeof TableInspectionResultSchema>;
 
-export interface InspectTableOptions {
-  table?: number;                // select specific table (1-based)
-  sampleRows: number;            // max rows per table (default: 20)
-  headerRow: 'auto' | 'none' | number;
-}
+export const TableInspectPayloadSchema = z.object({
+  file: z.string(),
+  query: z.record(z.string(), z.unknown()),
+  results: TableInspectionResultSchema,
+});
+export type TableInspectPayload = z.infer<typeof TableInspectPayloadSchema>;
+
+export const InspectTableOptionsSchema = z.object({
+  table: z.number().optional(),
+  sampleRows: z.number(),
+  headerRow: z.union([z.literal('auto'), z.literal('none'), z.number()]),
+});
+export type InspectTableOptions = z.infer<typeof InspectTableOptionsSchema>;

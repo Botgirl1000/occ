@@ -1,9 +1,16 @@
 import { readFile } from 'node:fs/promises';
 import pdf from 'pdf-parse';
+import { z } from 'zod';
 import { countWords } from '../utils.js';
 import { asOptionalString, formatDateLike } from '../inspect/shared.js';
 import type { DocumentProperties } from '../inspect/shared.js';
 import type { DocRiskFlags, DocContentStats, ContentPreview } from './types.js';
+
+const PdfParseResultSchema = z.object({
+  text: z.string(),
+  numpages: z.number(),
+  info: z.record(z.string(), z.unknown()).default({}),
+});
 
 function parsePdfDate(value: unknown): string | undefined {
   if (!value) return undefined;
@@ -35,14 +42,14 @@ export async function inspectPdf(
     originalLog.apply(console, args);
   };
 
-  let data: { text: string; numpages: number; info: Record<string, unknown> };
+  let data: z.infer<typeof PdfParseResultSchema>;
   try {
-    data = await pdf(buffer);
+    data = PdfParseResultSchema.parse(await pdf(buffer));
   } finally {
     console.log = originalLog;
   }
 
-  const info = data.info || {};
+  const info = data.info;
 
   const properties: DocumentProperties = {
     title: asOptionalString(info.Title),

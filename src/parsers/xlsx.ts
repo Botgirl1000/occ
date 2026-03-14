@@ -1,10 +1,18 @@
 import { readFile } from 'node:fs/promises';
 import XLSX from 'xlsx';
+import { z } from 'zod';
 import type { ParserOutput } from '../types.js';
+
+const XlsxWorkbookSchema = z.object({
+  SheetNames: z.array(z.string()),
+  Sheets: z.record(z.string(), z.object({
+    '!ref': z.string().optional(),
+  }).passthrough()),
+});
 
 export async function parseXlsx(filePath: string): Promise<ParserOutput> {
   const buffer = await readFile(filePath);
-  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const workbook = XlsxWorkbookSchema.parse(XLSX.read(buffer, { type: 'buffer' }));
 
   const sheets = workbook.SheetNames.length;
   let rows = 0;

@@ -1,7 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import pdf from 'pdf-parse';
+import { z } from 'zod';
 import { countWords } from '../utils.js';
 import type { ParserOutput } from '../types.js';
+
+const PdfParseResultSchema = z.object({
+  text: z.string(),
+  numpages: z.number(),
+});
 
 // Suppress noisy pdf.js warnings (font parsing, deprecated API, etc.)
 // Reference-counted to handle concurrent PDFs in the same batch safely.
@@ -34,9 +40,9 @@ export async function parsePdf(filePath: string): Promise<ParserOutput> {
   const buffer = await readFile(filePath);
 
   beginSuppression();
-  let data: { text: string; numpages: number };
+  let data: z.infer<typeof PdfParseResultSchema>;
   try {
-    data = await pdf(buffer);
+    data = PdfParseResultSchema.parse(await pdf(buffer));
   } finally {
     endSuppression();
   }

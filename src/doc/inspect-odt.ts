@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import officeparser from 'officeparser';
+import { z } from 'zod';
 import { countWords } from '../utils.js';
 import { asOptionalString, formatDateLike } from '../inspect/shared.js';
 import type { DocumentProperties } from '../inspect/shared.js';
@@ -63,7 +64,7 @@ export async function inspectOdt(
   if (zip.file('Basic/') || zip.file('Scripts/')) riskFlags.macros = true;
 
   // Extract text via officeparser
-  const text = await officeparser.parseOffice(buffer) as unknown as string;
+  const text = z.string().parse(await officeparser.parseOffice(buffer));
   const words = countWords(text);
   const paragraphs = text.split(/\n\n+/).filter(p => p.trim().length > 0).length;
 

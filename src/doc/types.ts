@@ -1,66 +1,76 @@
-import type { DocumentProperties } from '../inspect/shared.js';
-import type { StructureNode } from '../structure/types.js';
+import { z } from 'zod';
+import { DocumentPropertiesSchema } from '../inspect/shared.js';
+import { StructureNodeSchema } from '../structure/types.js';
 
-export interface DocRiskFlags {
-  comments: boolean;
-  trackedChanges: boolean;
-  hyperlinks: boolean;
-  embeddedObjects: boolean;
-  footnotes: boolean;
-  endnotes: boolean;
-  macros: boolean;
-  headerFooter: boolean;
-  tables: boolean;
-  encrypted: boolean;
-}
+export const DocRiskFlagsSchema = z.object({
+  comments: z.boolean(),
+  trackedChanges: z.boolean(),
+  hyperlinks: z.boolean(),
+  embeddedObjects: z.boolean(),
+  footnotes: z.boolean(),
+  endnotes: z.boolean(),
+  macros: z.boolean(),
+  headerFooter: z.boolean(),
+  tables: z.boolean(),
+  encrypted: z.boolean(),
+});
+export type DocRiskFlags = z.infer<typeof DocRiskFlagsSchema>;
 
-export interface DocContentStats {
-  words: number;
-  pages: number;
-  pagesEstimated: boolean;
-  paragraphs: number;
-  characters: number;
-  tables: number;
-  images: number;
-}
+export const DocContentStatsSchema = z.object({
+  words: z.number(),
+  pages: z.number(),
+  pagesEstimated: z.boolean(),
+  paragraphs: z.number(),
+  characters: z.number(),
+  tables: z.number(),
+  images: z.number(),
+});
+export type DocContentStats = z.infer<typeof DocContentStatsSchema>;
 
-export interface StructureSummary {
-  headingCount: number;
-  maxDepth: number;
-  topLevelSections: string[];
-  tree: StructureNode[];
-}
+export const StructureSummarySchema = z.object({
+  headingCount: z.number(),
+  maxDepth: z.number(),
+  topLevelSections: z.array(z.string()),
+  tree: z.array(StructureNodeSchema),
+});
+export type StructureSummary = z.infer<typeof StructureSummarySchema>;
 
-export interface ContentPreview {
-  truncated: boolean;
-  paragraphs: Array<{
-    index: number;
-    text: string;
-    isHeading: boolean;
-    headingLevel?: number;
-  }>;
-}
+export const ContentPreviewParagraphSchema = z.object({
+  index: z.number(),
+  text: z.string(),
+  isHeading: z.boolean(),
+  headingLevel: z.number().optional(),
+});
 
-export interface DocumentInspection {
-  file: string;
-  format: 'docx' | 'pdf' | 'odt';
-  size: number;
-  properties: DocumentProperties;
-  riskFlags: DocRiskFlags;
-  contentStats: DocContentStats;
-  structure: StructureSummary | null;
-  contentPreview: ContentPreview;
-  fullTokenEstimate: number;
-  previewTokenEstimate: number;
-}
+export const ContentPreviewSchema = z.object({
+  truncated: z.boolean(),
+  paragraphs: z.array(ContentPreviewParagraphSchema),
+});
+export type ContentPreview = z.infer<typeof ContentPreviewSchema>;
 
-export interface DocInspectPayload {
-  file: string;
-  query: Record<string, unknown>;
-  results: DocumentInspection;
-}
+export const DocumentInspectionSchema = z.object({
+  file: z.string(),
+  format: z.enum(['docx', 'pdf', 'odt']),
+  size: z.number(),
+  properties: DocumentPropertiesSchema,
+  riskFlags: DocRiskFlagsSchema,
+  contentStats: DocContentStatsSchema,
+  structure: StructureSummarySchema.nullable(),
+  contentPreview: ContentPreviewSchema,
+  fullTokenEstimate: z.number(),
+  previewTokenEstimate: z.number(),
+});
+export type DocumentInspection = z.infer<typeof DocumentInspectionSchema>;
 
-export interface InspectDocOptions {
-  sampleParagraphs: number;
-  includeStructure: boolean;
-}
+export const DocInspectPayloadSchema = z.object({
+  file: z.string(),
+  query: z.record(z.string(), z.unknown()),
+  results: DocumentInspectionSchema,
+});
+export type DocInspectPayload = z.infer<typeof DocInspectPayloadSchema>;
+
+export const InspectDocOptionsSchema = z.object({
+  sampleParagraphs: z.number(),
+  includeStructure: z.boolean(),
+});
+export type InspectDocOptions = z.infer<typeof InspectDocOptionsSchema>;

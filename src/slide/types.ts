@@ -1,66 +1,74 @@
-import type { DocumentProperties } from '../inspect/shared.js';
+import { z } from 'zod';
+import { DocumentPropertiesSchema } from '../inspect/shared.js';
 
-export interface SlideRiskFlags {
-  comments: boolean;
-  speakerNotes: boolean;
-  hyperlinks: boolean;
-  embeddedMedia: boolean;
-  animations: boolean;
-  macros: boolean;
-  charts: boolean;
-  tables: boolean;
-}
+export const SlideRiskFlagsSchema = z.object({
+  comments: z.boolean(),
+  speakerNotes: z.boolean(),
+  hyperlinks: z.boolean(),
+  embeddedMedia: z.boolean(),
+  animations: z.boolean(),
+  macros: z.boolean(),
+  charts: z.boolean(),
+  tables: z.boolean(),
+});
+export type SlideRiskFlags = z.infer<typeof SlideRiskFlagsSchema>;
 
-export interface SlideProfile {
-  index: number;
-  title: string | null;
-  words: number;
-  hasNotes: boolean;
-  notePreview: string | null;
-  images: number;
-  tables: number;
-  charts: number;
-}
+export const SlideProfileSchema = z.object({
+  index: z.number(),
+  title: z.string().nullable(),
+  words: z.number(),
+  hasNotes: z.boolean(),
+  notePreview: z.string().nullable(),
+  images: z.number(),
+  tables: z.number(),
+  charts: z.number(),
+});
+export type SlideProfile = z.infer<typeof SlideProfileSchema>;
 
-export interface SlideContentStats {
-  slides: number;
-  words: number;
-  slidesWithNotes: number;
-  totalImages: number;
-  totalTables: number;
-  totalCharts: number;
-}
+export const SlideContentStatsSchema = z.object({
+  slides: z.number(),
+  words: z.number(),
+  slidesWithNotes: z.number(),
+  totalImages: z.number(),
+  totalTables: z.number(),
+  totalCharts: z.number(),
+});
+export type SlideContentStats = z.infer<typeof SlideContentStatsSchema>;
 
-export interface SlidePreview {
-  truncated: boolean;
-  slides: Array<{
-    index: number;
-    title: string | null;
-    textPreview: string;
-    hasNotes: boolean;
-  }>;
-}
+export const SlidePreviewSchema = z.object({
+  truncated: z.boolean(),
+  slides: z.array(z.object({
+    index: z.number(),
+    title: z.string().nullable(),
+    textPreview: z.string(),
+    hasNotes: z.boolean(),
+  })),
+});
+export type SlidePreview = z.infer<typeof SlidePreviewSchema>;
 
-export interface PresentationInspection {
-  file: string;
-  format: 'pptx' | 'odp';
-  size: number;
-  properties: DocumentProperties;
-  riskFlags: SlideRiskFlags;
-  contentStats: SlideContentStats;
-  slideInventory: SlideProfile[];
-  slidePreview: SlidePreview;
-  fullTokenEstimate: number;
-  previewTokenEstimate: number;
-}
+export const PresentationInspectionSchema = z.object({
+  file: z.string(),
+  format: z.enum(['pptx', 'odp']),
+  size: z.number(),
+  properties: DocumentPropertiesSchema,
+  riskFlags: SlideRiskFlagsSchema,
+  contentStats: SlideContentStatsSchema,
+  slideInventory: z.array(SlideProfileSchema),
+  slidePreview: SlidePreviewSchema,
+  fullTokenEstimate: z.number(),
+  previewTokenEstimate: z.number(),
+});
+export type PresentationInspection = z.infer<typeof PresentationInspectionSchema>;
 
-export interface SlideInspectPayload {
-  file: string;
-  query: Record<string, unknown>;
-  results: PresentationInspection;
-}
+export const SlideInspectPayloadSchema = z.object({
+  file: z.string(),
+  query: z.record(z.string(), z.unknown()),
+  results: PresentationInspectionSchema,
+});
+export type SlideInspectPayload = z.infer<typeof SlideInspectPayloadSchema>;
 
-export interface InspectSlideOptions {
-  sampleSlides: number;
-  slide?: number;
-}
+export const InspectSlideOptionsSchema = z.object({
+  sampleSlides: z.number(),
+  slide: z.number().optional(),
+});
+export type InspectSlideOptions = z.infer<typeof InspectSlideOptionsSchema>;
