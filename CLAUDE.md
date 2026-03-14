@@ -92,21 +92,28 @@ bin/occ.ts → src/cli.ts (orchestrator)
 
 ## Refactoring Status
 
-Currently in **Phase 2** of a modular TypeScript refactoring. See `specs/refactor/` for all plans and progress.
+**Phase 3 complete** — modular TypeScript refactoring. See `specs/refactor/` for architecture, `specs/*/progress.md` for per-module status.
 
-### Module Map (Current → Target)
+### Module Map
 
-The existing directory structure IS the target architecture. No files move between directories. The 7 logical modules are:
+The existing directory structure IS the target architecture. All 7 modules extracted and verified:
 
-| Module | Layer | Current Location |
-|--------|-------|------------------|
-| `shared` | 0 | `src/types.ts`, `src/utils.ts`, `src/@types/` |
-| `pipeline` | 1 | `src/walker.ts`, `src/parsers/`, `src/stats.ts`, `src/scc.ts`, `src/progress.ts`, `src/cli-validation.ts` |
-| `content` | 1 | `src/markdown/`, `src/structure/`, `src/inspect/` |
-| `output` | 2 | `src/output/` |
-| `code` | 3 | `src/code/` |
-| `inspect-commands` | 3 | `src/doc/`, `src/sheet/`, `src/slide/`, `src/table/` |
-| `cli` | 4 | `src/cli.ts` |
+| Module | Layer | Location | Status |
+|--------|-------|----------|--------|
+| `shared` | 0 | `src/types.ts`, `src/utils.ts`, `src/@types/` | Done |
+| `pipeline` | 1 | `src/walker.ts`, `src/parsers/`, `src/stats.ts`, `src/scc.ts`, `src/progress.ts`, `src/cli-validation.ts` | Done |
+| `content` | 1 | `src/markdown/`, `src/structure/`, `src/inspect/` | Done |
+| `output` | 2 | `src/output/` | Done |
+| `code` | 3 | `src/code/` | Done |
+| `inspect-commands` | 3 | `src/doc/`, `src/sheet/`, `src/slide/`, `src/table/` | Done |
+| `cli` | 4 | `src/cli.ts` | Done |
+
+### Key Changes in Phase 3
+
+- Extracted `getCell`, `renderCell`, `isNonEmptyCell` from `sheet/inspect.ts` to `inspect/xlsx-cells.ts` (Decision D3)
+- Eliminated `table→sheet` cross-domain dependency
+- Deprecated re-export shim in `sheet/inspect.ts` for backwards compatibility
+- Import DAG linter updated: `table` no longer depends on `sheet`
 
 ### Rules
 
