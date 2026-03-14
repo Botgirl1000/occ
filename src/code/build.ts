@@ -1,14 +1,16 @@
 import path from 'node:path';
+import { z } from 'zod';
 import { discoverCodeFiles } from './discover.js';
 import { getLanguageSpec, getModuleName, normalizePath } from './languages.js';
 import { parseCodeFile } from './parsers.js';
 import type { CodeCapabilities, CodebaseIndex, CodeEdge, CodeNode, ParsedFile } from './types.js';
 
-export interface BuildCodebaseOptions {
-  repoRoot: string;
-  excludeDir?: string[];
-  noGitignore?: boolean;
-}
+export const BuildCodebaseOptionsSchema = z.object({
+  repoRoot: z.string(),
+  excludeDir: z.array(z.string()).optional(),
+  noGitignore: z.boolean().optional(),
+});
+export type BuildCodebaseOptions = z.infer<typeof BuildCodebaseOptionsSchema>;
 
 function makeId(prefix: string, ...parts: Array<string | number | undefined>): string {
   return [prefix, ...parts.filter((part): part is string | number => part != null)].join(':');
