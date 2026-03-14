@@ -22,6 +22,7 @@ import type { ParseResult } from './types.js';
 import type { FileEntry } from './types.js';
 import type { SccLanguage } from './scc.js';
 import { getExtension, writeStream } from './utils.js';
+import { validateLargeFileLimit } from './cli-validation.js';
 
 interface CliOptions {
   byFile?: boolean;
@@ -86,14 +87,6 @@ export async function run(argv: string[]) {
   registerTableCommands(program);
 
   await program.parseAsync(argv);
-}
-
-function validateLargeFileLimit(value: string): number {
-  const n = parseFloat(value);
-  if (Number.isNaN(n) || n <= 0) {
-    throw new Error(`Invalid --large-file-limit value: "${value}" (must be a positive number)`);
-  }
-  return n;
 }
 
 const STRUCTURABLE_EXTS = new Set(['docx', 'pdf', 'pptx', 'odt', 'odp']);

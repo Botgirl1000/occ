@@ -5,6 +5,7 @@ import { inspectDocument } from './inspect.js';
 import { formatDocInspection, formatDocPayloadJson } from './output.js';
 import { createInspectPayload } from '../inspect/shared.js';
 import { writeStream } from '../utils.js';
+import { parsePositiveInt } from '../cli-validation.js';
 import type { InspectDocOptions, DocInspectPayload } from './types.js';
 
 interface DocCommandOptions {
@@ -17,15 +18,6 @@ interface DocCommandOptions {
 
 function getOptions(command: Command): DocCommandOptions {
   return command.optsWithGlobals() as DocCommandOptions;
-}
-
-function parsePositiveInt(value: string | undefined, fallback: number, label: string): number {
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(`Invalid ${label}: "${value}"`);
-  }
-  return parsed;
 }
 
 async function emit(output: string, options: DocCommandOptions) {

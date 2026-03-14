@@ -5,6 +5,7 @@ import { inspectTables } from './inspect.js';
 import { formatTableInspection, formatTablePayloadJson } from './output.js';
 import { createInspectPayload } from '../inspect/shared.js';
 import { writeStream } from '../utils.js';
+import { parsePositiveInt, parseHeaderRow } from '../cli-validation.js';
 import type { InspectTableOptions, TableInspectPayload } from './types.js';
 
 interface TableCommandOptions {
@@ -18,25 +19,6 @@ interface TableCommandOptions {
 
 function getOptions(command: Command): TableCommandOptions {
   return command.optsWithGlobals() as TableCommandOptions;
-}
-
-function parsePositiveInt(value: string | undefined, fallback: number, label: string): number {
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(`Invalid ${label}: "${value}"`);
-  }
-  return parsed;
-}
-
-function parseHeaderRow(value: string | undefined): 'auto' | 'none' | number {
-  if (!value || value === 'auto') return 'auto';
-  if (value === 'none') return 'none';
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(`Invalid header-row: "${value}" (use "auto", "none", or a positive number)`);
-  }
-  return parsed;
 }
 
 async function emit(output: string, options: TableCommandOptions) {

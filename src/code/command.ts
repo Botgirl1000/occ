@@ -1,8 +1,10 @@
 import { writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Command, Option } from 'commander';
+import { z } from 'zod';
 import { buildCodebaseIndex } from './build.js';
 import { writeStream } from '../utils.js';
+import { parsePositiveInt } from '../cli-validation.js';
 import {
   analyzeCallChain,
   analyzeCallers,
@@ -45,21 +47,15 @@ function getOptions(command: Command): CodeCommandOptions {
 
 const FINDABLE_TYPES: CodeNodeType[] = ['file', 'module', 'function', 'class', 'interface', 'type-alias', 'enum', 'variable'];
 
-function parseLimit(value: string | undefined, fallback: number): number {
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(`Invalid numeric limit: "${value}"`);
-  }
-  return parsed;
-}
+const FindableTypeSchema = z.enum(['file', 'module', 'function', 'class', 'interface', 'type-alias', 'enum', 'variable']);
 
 function parseType(value: string | undefined): CodeNodeType | undefined {
   if (!value) return undefined;
-  if (!FINDABLE_TYPES.includes(value as CodeNodeType)) {
+  const result = FindableTypeSchema.safeParse(value);
+  if (!result.success) {
     throw new Error(`Invalid type "${value}". Expected one of: ${FINDABLE_TYPES.join(', ')}`);
   }
-  return value as CodeNodeType;
+  return result.data;
 }
 
 async function emit(output: string, options: CodeCommandOptions) {
@@ -112,7 +108,7 @@ export function registerCodeCommands(program: Command) {
   findName.action(async (name: string, _options: CodeCommandOptions, command: Command) => {
     const options = getOptions(command);
     const index = await withIndex(options);
-    const results = findByName(index, name, parseType(options.type), options.file, parseLimit(options.limit, 50));
+    const results = findByName(index, name, parseType(options.type), options.file, parsePositiveInt(options.limit, 50, 'limit'));
     const payload = createPayload(index, { command: 'code.find.name', value: name, file: options.file, type: options.type }, results);
     const output = options.format === 'json'
       ? formatPayloadJson(payload)
@@ -125,7 +121,7 @@ export function registerCodeCommands(program: Command) {
   findPatternCmd.action(async (pattern: string, _options: CodeCommandOptions, command: Command) => {
     const options = getOptions(command);
     const index = await withIndex(options);
-    const results = findByPattern(index, pattern, parseType(options.type), parseLimit(options.limit, 50));
+    const results = findByPattern(index, pattern, parseType(options.type), parsePositiveInt(options.limit, 50, 'limit'));
     const payload = createPayload(index, { command: 'code.find.pattern', value: pattern, type: options.type }, results);
     const output = options.format === 'json'
       ? formatPayloadJson(payload)
@@ -138,7 +134,7 @@ export function registerCodeCommands(program: Command) {
   findTypeCmd.action(async (nodeType: string, _options: CodeCommandOptions, command: Command) => {
     const options = getOptions(command);
     const index = await withIndex(options);
-    const results = findByType(index, parseType(nodeType) ?? 'function', parseLimit(options.limit, 50));
+    const results = findByType(index, parseType(nodeType) ?? 'function', parsePositiveInt(options.limit, 50, 'limit'));
     const payload = createPayload(index, { command: 'code.find.type', value: nodeType }, results);
     const output = options.format === 'json'
       ? formatPayloadJson(payload)
@@ -151,7 +147,7 @@ export function registerCodeCommands(program: Command) {
   findContentCmd.action(async (text: string, _options: CodeCommandOptions, command: Command) => {
     const options = getOptions(command);
     const index = await withIndex(options);
-    const results = findContent(index, text, parseLimit(options.limit, 50));
+    const results = findContent(index, text, parsePositiveInt(options.limit, 50, 'limit'));
     const payload = createPayload(index, { command: 'code.find.content', value: text }, results);
     const output = options.format === 'json'
       ? formatPayloadJson(payload)
@@ -190,7 +186,7 @@ export function registerCodeCommands(program: Command) {
   analyzeChainCmd.action(async (fromFunction: string, toFunction: string, _options: CodeCommandOptions, command: Command) => {
     const options = getOptions(command);
     const index = await withIndex(options);
-    const results = analyzeCallChain(index, fromFunction, toFunction, parseLimit(options.depth, 5));
+    const results = analyzeCallChain(index, fromFunction, toFunction, parsePositiveInt(options.depth, 5, 'depth'));
     const payload = createPayload(index, { command: 'code.analyze.chain', from: fromFunction, to: toFunction, depth: options.depth }, results);
     const output = options.format === 'json'
       ? formatPayloadJson(payload)

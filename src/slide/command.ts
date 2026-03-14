@@ -5,6 +5,7 @@ import { inspectPresentation } from './inspect.js';
 import { formatSlideInspection, formatSlidePayloadJson } from './output.js';
 import { createInspectPayload } from '../inspect/shared.js';
 import { writeStream } from '../utils.js';
+import { parsePositiveInt } from '../cli-validation.js';
 import type { InspectSlideOptions, SlideInspectPayload } from './types.js';
 
 interface SlideCommandOptions {
@@ -17,15 +18,6 @@ interface SlideCommandOptions {
 
 function getOptions(command: Command): SlideCommandOptions {
   return command.optsWithGlobals() as SlideCommandOptions;
-}
-
-function parsePositiveInt(value: string | undefined, fallback: number, label: string): number {
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(`Invalid ${label}: "${value}"`);
-  }
-  return parsed;
 }
 
 async function emit(output: string, options: SlideCommandOptions) {

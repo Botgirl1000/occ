@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { inspectWorkbook, createSheetPayload } from './inspect.js';
 import { formatSheetInspection, formatSheetPayloadJson } from './output.js';
 import { writeStream } from '../utils.js';
+import { parsePositiveInt, parseHeaderRow } from '../cli-validation.js';
 import type { InspectSheetOptions } from './types.js';
 
 interface SheetCommandOptions {
@@ -18,25 +19,6 @@ interface SheetCommandOptions {
 
 function getOptions(command: Command): SheetCommandOptions {
   return command.optsWithGlobals() as SheetCommandOptions;
-}
-
-function parsePositiveInt(value: string | undefined, fallback: number, label: string): number {
-  if (!value) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(`Invalid ${label}: "${value}"`);
-  }
-  return parsed;
-}
-
-function parseHeaderRow(value: string | undefined): InspectSheetOptions['headerRow'] {
-  if (!value || value === 'auto') return 'auto';
-  if (value === 'none') return 'none';
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(`Invalid header row: "${value}"`);
-  }
-  return parsed;
 }
 
 async function emit(output: string, options: SheetCommandOptions) {

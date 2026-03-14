@@ -3,38 +3,40 @@ import { promisify } from 'node:util';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { z } from 'zod';
 import { OFFICE_EXTENSIONS } from './utils.js';
 
 const execFileAsync = promisify(execFile);
 
-export interface SccLanguage {
-  Name: string;
-  Count: number;
-  Lines: number;
-  Blank: number;
-  Comment: number;
-  Code: number;
-  Files?: SccFile[];
-  [key: string]: unknown;
-}
+export const SccFileSchema = z.object({
+  Filename: z.string().optional(),
+  Location: z.string().optional(),
+  Lines: z.number(),
+  Blank: z.number(),
+  Comment: z.number(),
+  Code: z.number(),
+}).passthrough();
+export type SccFile = z.infer<typeof SccFileSchema>;
 
-export interface SccFile {
-  Filename?: string;
-  Location?: string;
-  Lines: number;
-  Blank: number;
-  Comment: number;
-  Code: number;
-  [key: string]: unknown;
-}
+export const SccLanguageSchema = z.object({
+  Name: z.string(),
+  Count: z.number(),
+  Lines: z.number(),
+  Blank: z.number(),
+  Comment: z.number(),
+  Code: z.number(),
+  Files: z.array(SccFileSchema).optional(),
+}).passthrough();
+export type SccLanguage = z.infer<typeof SccLanguageSchema>;
 
-export interface RunSccOptions {
-  byFile?: boolean;
-  excludeDir?: string[];
-  sort?: string;
-  ci?: boolean;
-  noGitignore?: boolean;
-}
+export const RunSccOptionsSchema = z.object({
+  byFile: z.boolean().optional(),
+  excludeDir: z.array(z.string()).optional(),
+  sort: z.string().optional(),
+  ci: z.boolean().optional(),
+  noGitignore: z.boolean().optional(),
+});
+export type RunSccOptions = z.infer<typeof RunSccOptionsSchema>;
 
 function getVendoredSccPath(): string {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -113,7 +115,7 @@ export async function runScc(sccBinary: string | null, directories: string[], op
 
     if (!stdout.trim()) return [];
 
-    return JSON.parse(stdout) as SccLanguage[];
+    return z.array(SccLanguageSchema).parse(JSON.parse(stdout));
   } catch (err: unknown) {
     const error = err as NodeJS.ErrnoException;
     if (error.code === 'ENOENT') {
