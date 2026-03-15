@@ -37,6 +37,7 @@ OCC provides several command families:
 - **Dependency categorization** into local, external, and unresolved imports
 - **JSON-first automation support** across all command families
 - **Zero required services** for `occ code`; no database or daemon
+- **Programmatic library access** via subpath exports for the code exploration module
 
 ## Why OCC?
 

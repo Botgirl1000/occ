@@ -1,6 +1,6 @@
 {
   "name": "@cesarandreslopez/occ",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Office Cloc and Count — scc-style summary tables for office documents",
   "type": "module",
   "bin": {
@@ -32,6 +32,13 @@
     "scc",
     "cli"
   ],
+  "exports": {
+    ".": "./dist/bin/occ.js",
+    "./code/build": "./dist/src/code/build.js",
+    "./code/types": "./dist/src/code/types.js",
+    "./code/query": "./dist/src/code/query.js",
+    "./code/discover": "./dist/src/code/discover.js"
+  },
   "files": [
     "dist/",
     "scripts/postinstall.js"
@@ -59,6 +66,14 @@
     "turndown": "^7.2.2",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "^4.3.6"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^25.3.5",

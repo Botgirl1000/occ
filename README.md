@@ -231,6 +231,31 @@ Highlights of the current code exploration behavior:
 
 All `occ code` commands support `--format tabular|json`. Most symbol-targeted commands also support `--file` for disambiguation, and JSON output includes repository metadata, query metadata, results, repository stats, and per-language capability flags.
 
+## Programmatic Usage
+
+The code exploration module is available as a library via subpath exports:
+
+```ts
+import { buildCodebaseIndex } from '@cesarandreslopez/occ/code/build';
+import { discoverCodeFiles } from '@cesarandreslopez/occ/code/discover';
+import { findByName, analyzeCalls } from '@cesarandreslopez/occ/code/query';
+import type { CodebaseIndex, CodeNode } from '@cesarandreslopez/occ/code/types';
+
+const index = await buildCodebaseIndex({ repoRoot: './my-repo' });
+const results = findByName(index, 'UserService');
+```
+
+Available subpath exports:
+
+| Import path | Description |
+|-------------|-------------|
+| `@cesarandreslopez/occ/code/build` | `buildCodebaseIndex` — graph construction |
+| `@cesarandreslopez/occ/code/types` | TypeScript types (`CodebaseIndex`, `CodeNode`, `CodeEdge`, etc.) |
+| `@cesarandreslopez/occ/code/query` | Query functions (`findByName`, `analyzeCalls`, `analyzeDeps`, etc.) |
+| `@cesarandreslopez/occ/code/discover` | `discoverCodeFiles` — file discovery |
+
+TypeScript is an optional peer dependency (`>=5.0.0`). If you use the code exploration module programmatically, ensure TypeScript is available in your project.
+
 ## Document Inspection
 
 `occ doc inspect` extracts metadata, risk flags, content stats, heading structure, and a content preview from DOCX and ODT documents.

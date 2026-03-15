@@ -6,6 +6,17 @@ All notable changes to this project will be documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-03-15
+
+### Added
+
+- `exports` field with subpath imports for the code exploration module (`./code/build`, `./code/types`, `./code/query`, `./code/discover`) and root entry point (`.`) — consumers can now use clean imports instead of fragile deep paths into `dist/`
+- TypeScript as an optional `peerDependency` (`>=5.0.0`) — consumers using the code exploration module programmatically can provide their own TypeScript installation
+
+### Changed
+
+- The `exports` field restricts importable entry points. Consumers relying on unlisted deep imports into `dist/` will need to use the declared subpath exports instead
+
 ## [0.4.1] - 2026-03-14
 
 ### Added
@@ -135,6 +146,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Progress bar with ETA
 - Auto-download of scc binary during `npm install` (skip with `SCC_SKIP_DOWNLOAD=1`)
 
+[0.5.0]: https://github.com/cesarandreslopez/occ/releases/tag/v0.5.0
 [0.4.1]: https://github.com/cesarandreslopez/occ/releases/tag/v0.4.1
 [0.4.0]: https://github.com/cesarandreslopez/occ/releases/tag/v0.4.0
 [0.3.1]: https://github.com/cesarandreslopez/occ/releases/tag/v0.3.1

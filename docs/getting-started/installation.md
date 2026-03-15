@@ -61,6 +61,21 @@ SCC_SKIP_DOWNLOAD=1 npm install
 !!! note "Code metrics are optional"
     If scc is not available, OCC still works — it just won't show the code metrics section in the default scan flow. You can also explicitly skip that section with `--no-code`.
 
+## Programmatic Usage
+
+The code exploration module is available as a library via subpath exports:
+
+```ts
+import { buildCodebaseIndex } from '@cesarandreslopez/occ/code/build';
+import { findByName } from '@cesarandreslopez/occ/code/query';
+import type { CodebaseIndex } from '@cesarandreslopez/occ/code/types';
+```
+
+Available subpath exports: `./code/build`, `./code/types`, `./code/query`, `./code/discover`.
+
+!!! note "TypeScript peer dependency"
+    TypeScript (`>=5.0.0`) is an optional peer dependency. If you use the code exploration module programmatically, ensure TypeScript is installed in your project (`npm i typescript`).
+
 ## Code Exploration Support
 
 `occ code` does not require a database or background service. It builds an in-memory graph on demand from the repository you point it at.
