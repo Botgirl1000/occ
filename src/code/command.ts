@@ -106,6 +106,30 @@ export function registerCodeCommands(program: Command) {
   const find = code.command('find').description('Find symbols and source content');
   const analyze = code.command('analyze').description('Analyze relationships between code elements');
 
+  // occ code index — build and emit the full codebase index
+  const indexCmd = code.command('index').description('Build the full codebase index (files, symbols, edges, capabilities)');
+  addSharedOptions(indexCmd);
+  indexCmd.action(async (_options: CodeCommandOptions, command: Command) => {
+    const options = getOptions(command);
+    const repoRoot = path.resolve(options.path ?? process.cwd());
+    const index = await buildCodebaseIndex({
+      repoRoot,
+      excludeDir: options.excludeDir?.split(',').map(value => value.trim()).filter(Boolean),
+      noGitignore: options.gitignore === false,
+    }, (event) => {
+      if (options.format !== 'json') {
+        process.stderr.write(`\r${event.phase}: ${event.completed}/${event.total}${event.detail ? ` ${event.detail}` : ''}   `);
+      }
+    });
+    if (options.format !== 'json') {
+      process.stderr.write('\n');
+    }
+    const summary = options.format === 'json'
+      ? JSON.stringify(index, null, 2)
+      : `${index.files.length} files, ${index.nodes.length} nodes, ${index.edges.length} edges, ${Object.keys(index.capabilities).length} languages\n`;
+    await emit(summary.endsWith('\n') ? summary : `${summary}\n`, options);
+  });
+
   const findName = find.command('name <name>').description('Find code elements by exact name');
   addSharedOptions(findName, { includeFile: true, includeLimit: true, includeType: true });
   findName.action(async (name: string, _options: CodeCommandOptions, command: Command) => {

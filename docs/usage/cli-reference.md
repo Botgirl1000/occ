@@ -325,6 +325,16 @@ Common behaviors across the `occ code` namespace:
 - `analyze chain` can report a chain that is **blocked by ambiguity** when a path cannot continue confidently
 - `occ code` builds its graph in memory on each run and does not require `scc`, a database, or a background service
 
+### `occ code index`
+
+Build and emit the full codebase index (files, symbols, edges, language capabilities). In JSON mode, outputs the complete index object. In tabular mode, prints a summary line with counts:
+
+```bash
+occ code index --path .
+occ code index --path . --format json
+occ code index --path . --format json --output index.json
+```
+
 ### `occ code find name <name>`
 
 Find code elements by exact name:

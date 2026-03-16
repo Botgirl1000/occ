@@ -110,6 +110,9 @@ occ code analyze callers createUser --path .
 occ code analyze deps src/deps --path .
 occ code analyze chain ambiguousCaller duplicate --path .
 
+# Dump full codebase index as JSON
+occ code index --path . --format json
+
 # Only specific formats
 occ --include-ext pdf,docx docs/
 
@@ -223,6 +226,7 @@ occ code analyze chain ambiguousCaller duplicate --path test/fixtures/code-explo
 
 Highlights of the current code exploration behavior:
 
+- **Full index export** via `occ code index` — dump the complete graph (files, symbols, edges, language capabilities) as JSON or a summary line
 - **Exact, pattern, type, and content search** over the repository graph
 - **Call analysis** with explicit `resolved`, `ambiguous`, and `unresolved` states
 - **Receiver-aware method resolution** for `this`, `super`, `self`, and `cls`
