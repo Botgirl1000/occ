@@ -32,6 +32,23 @@ Scanned 23 documents (56,750 words, 201 pages) in 120ms
 
 Columns are auto-detected based on which metrics have data. For example, the "Details" column combines paragraphs, sheets, rows, cells, and slides and only appears when at least one format produces those metrics.
 
+### Confidence Annotations
+
+When `--show-confidence` is enabled, estimated metrics are annotated with a `~` suffix:
+
+```
+-- Documents ---------------------------------------------------------------
+  Format    Files    Words    Pages                  Details      Size
+----------------------------------------------------------------------------
+  Word         12   34,210     137~              1,203 paras    1.2 MB
+  PDF           8   22,540       64                             4.5 MB
+----------------------------------------------------------------------------
+  Total        23   56,750      201              1,203 paras    6.5 MB
+~ estimated metric
+```
+
+A footnote (`~ estimated metric`) explains the annotation.
+
 ## JSON Output
 
 Use `--format json` for machine-readable output:
@@ -83,6 +100,26 @@ occ --format json docs/
 ```
 
 The `documents` section always contains `files` (array of per-type or per-file entries) and `totals`. The `code` section is the raw `scc` JSON output and is only present when code files are found and `scc` is available.
+
+When `--show-confidence` is enabled, each file entry includes a `confidence` object:
+
+```json
+{
+  "type": "Word",
+  "count": 12,
+  "words": 34210,
+  "pages": 137,
+  "paragraphs": 1203,
+  "size": 1258291,
+  "confidence": {
+    "words": "exact",
+    "pages": "estimated",
+    "paragraphs": "exact"
+  }
+}
+```
+
+The `confidence` object maps metric names to `"exact"` or `"estimated"`. It is omitted when `--show-confidence` is not used. Totals do not include confidence since they are computed sums.
 
 When `--structure` is used, an additional `structures` key appears:
 

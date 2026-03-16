@@ -18,13 +18,38 @@ const PARSER_MAP: Record<string, ParserFn> = {
   odp: parseOdf,
 };
 
-function failureResult(filePath: string, size: number, ext: string): ParseResult {
+export function suggestFromError(error: Error, ext: string): string | undefined {
+  const msg = error.message.toLowerCase();
+
+  if (msg.includes('invalid zip') || msg.includes('not a valid zip') || msg.includes('end of central directory')) {
+    return `File may be corrupted or not a valid .${ext} file.`;
+  }
+  if (msg.includes('password') || msg.includes('encrypted')) {
+    return 'Document is password-protected. Remove the password and retry.';
+  }
+  if (msg.includes('enoent') || msg.includes('no such file')) {
+    return 'File not found. Check the file path.';
+  }
+  if (msg.includes('eacces') || msg.includes('permission denied')) {
+    return 'Permission denied. Check file permissions.';
+  }
+  if (msg.includes('out of memory') || msg.includes('allocation failed')) {
+    return 'File is too large to parse. Try increasing the memory limit or use --large-file-limit.';
+  }
+  if (msg.includes('content.xml')) {
+    return `File may be corrupted or not a valid .${ext} document (missing content.xml).`;
+  }
+  return undefined;
+}
+
+function failureResult(filePath: string, size: number, ext: string, suggestion?: string): ParseResult {
   return {
     filePath,
     size,
     success: false,
     fileType: EXTENSION_TO_TYPE[ext] || ext.toUpperCase(),
     metrics: null,
+    suggestion,
   };
 }
 
@@ -44,9 +69,11 @@ export async function parseFile(filePath: string, size: number): Promise<ParseRe
       success: true,
       fileType: result.fileType,
       metrics: result.metrics,
+      confidence: result.confidence,
     };
-  } catch {
-    return failureResult(filePath, size, ext);
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    return failureResult(filePath, size, ext, suggestFromError(error, ext));
   }
 }
 

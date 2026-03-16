@@ -18,6 +18,8 @@ export const StructureNodeSchema: z.ZodType<StructureNode> = z.object({
   endPage: z.number().optional(),
   parentNodeId: z.string().optional(),
   structureCode: z.string().optional(),
+  wordCount: z.number().optional(),
+  tokenEstimate: z.number().optional(),
   children: z.lazy(() => z.array(StructureNodeSchema)),
 });
 export interface StructureNode {
@@ -31,6 +33,8 @@ export interface StructureNode {
   endPage?: number;
   parentNodeId?: string;
   structureCode?: string;
+  wordCount?: number;
+  tokenEstimate?: number;
   children: StructureNode[];
 }
 
@@ -81,6 +85,8 @@ export function toDict(structure: DocumentStructure): Record<string, unknown> {
       endPage: node.endPage,
       parentNodeId: node.parentNodeId,
       structureCode: node.structureCode,
+      wordCount: node.wordCount,
+      tokenEstimate: node.tokenEstimate,
       children: node.children.map(nodeToDict),
     };
   }

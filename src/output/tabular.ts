@@ -38,10 +38,10 @@ export function formatDocumentTable(stats: AggregateResult, options: TableOption
   });
 
   for (const row of stats.rows) {
-    table.push(buildRow(row, stats.columns, isByFile, c));
+    table.push(buildRow(row, stats.columns, isByFile, c, false, stats.showConfidence));
   }
 
-  table.push(buildRow(stats.totals, stats.columns, isByFile, c, true));
+  table.push(buildRow(stats.totals, stats.columns, isByFile, c, true, false));
 
   const tableStr = addSeparators(table.toString(), ci ? '-' : '─');
 
@@ -58,6 +58,9 @@ export function formatDocumentTable(stats: AggregateResult, options: TableOption
   );
   if (hasEstimatedPages) {
     lines.push(c.dim('* Word/ODT pages estimated at 250 words/page'));
+  }
+  if (stats.showConfidence) {
+    lines.push(c.dim('~ estimated metric'));
   }
 
   return lines.join('\n');
@@ -219,7 +222,12 @@ function buildColAligns(columns: ColumnVisibility, byFile: boolean): string[] {
   return aligns;
 }
 
-function buildRow(row: StatsRow, columns: ColumnVisibility, byFile: boolean, c: ColorScheme, isTotal = false): string[] {
+function annotateConfidence(value: string, metric: string, row: StatsRow, showConfidence: boolean): string {
+  if (!showConfidence || !row.confidence || row.confidence[metric] !== 'estimated') return value;
+  return value + '~';
+}
+
+function buildRow(row: StatsRow, columns: ColumnVisibility, byFile: boolean, c: ColorScheme, isTotal = false, showConfidence = false): string[] {
   const fmt = isTotal ? c.total : (v: string) => v;
   const fmtType = isTotal ? c.total : c.type;
   const fmtNum = isTotal ? c.total : c.number;
@@ -237,16 +245,16 @@ function buildRow(row: StatsRow, columns: ColumnVisibility, byFile: boolean, c: 
 
   if (!byFile) cells.push(fmt(formatNumber(row.files)));
 
-  if (columns.hasWords) cells.push(fmtNum(row.words ? formatNumber(row.words) : ''));
-  if (columns.hasPages) cells.push(fmtNum(row.pages ? formatNumber(row.pages) : ''));
+  if (columns.hasWords) cells.push(fmtNum(row.words ? annotateConfidence(formatNumber(row.words), 'words', row, showConfidence) : ''));
+  if (columns.hasPages) cells.push(fmtNum(row.pages ? annotateConfidence(formatNumber(row.pages), 'pages', row, showConfidence) : ''));
 
   if (hasExtraColumns(columns)) {
     const parts: string[] = [];
-    if (row.paragraphs) parts.push(`${formatNumber(row.paragraphs)} paras`);
-    if (row.sheets) parts.push(`${formatNumber(row.sheets)} sheets`);
-    if (row.rows) parts.push(`${formatNumber(row.rows)} rows`);
-    if (row.cells) parts.push(`${formatNumber(row.cells)} cells`);
-    if (row.slides) parts.push(`${formatNumber(row.slides)} slides`);
+    if (row.paragraphs) parts.push(`${annotateConfidence(formatNumber(row.paragraphs), 'paragraphs', row, showConfidence)} paras`);
+    if (row.sheets) parts.push(`${annotateConfidence(formatNumber(row.sheets), 'sheets', row, showConfidence)} sheets`);
+    if (row.rows) parts.push(`${annotateConfidence(formatNumber(row.rows), 'rows', row, showConfidence)} rows`);
+    if (row.cells) parts.push(`${annotateConfidence(formatNumber(row.cells), 'cells', row, showConfidence)} cells`);
+    if (row.slides) parts.push(`${annotateConfidence(formatNumber(row.slides), 'slides', row, showConfidence)} slides`);
     cells.push(fmt(parts.join(', ')));
   }
 

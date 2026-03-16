@@ -22,5 +22,9 @@ export async function parsePptx(filePath: string): Promise<ParserOutput> {
   return {
     fileType: 'PowerPoint',
     metrics: { words, slides },
+    confidence: {
+      words: 'estimated',
+      slides: 'exact',
+    },
   };
 }

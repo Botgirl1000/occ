@@ -22,6 +22,13 @@ export function formatJson(
       if (r[hasKey(f)]) entry[f] = r[f] || 0;
     }
     entry.size = r.size;
+    if (stats.showConfidence && r.confidence) {
+      const conf: Record<string, string> = {};
+      for (const f of METRIC_FIELDS) {
+        if (r[hasKey(f)] && r.confidence[f]) conf[f] = r.confidence[f];
+      }
+      if (Object.keys(conf).length > 0) entry.confidence = conf;
+    }
     return entry;
   };
 

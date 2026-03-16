@@ -17,5 +17,10 @@ export async function parseDocx(filePath: string): Promise<ParserOutput> {
   return {
     fileType: 'Word',
     metrics: { words, pages, paragraphs },
+    confidence: {
+      words: 'exact',
+      pages: 'estimated',
+      paragraphs: 'exact',
+    },
   };
 }

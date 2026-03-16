@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { estimateTokenCount } from '../tokens.js';
 
 export const DocumentPropertiesSchema = z.object({
   title: z.string().optional(),
@@ -13,8 +14,7 @@ export const DocumentPropertiesSchema = z.object({
 export type DocumentProperties = z.infer<typeof DocumentPropertiesSchema>;
 
 export function estimateTokens(input: string | number): number {
-  const chars = typeof input === 'number' ? input : input.length;
-  return Math.max(0, Math.ceil(chars / 4));
+  return estimateTokenCount(input);
 }
 
 export function asOptionalString(value: unknown): string | undefined {

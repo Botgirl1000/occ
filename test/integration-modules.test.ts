@@ -52,10 +52,11 @@ test('shared types flow into pipeline aggregate()', () => {
 
 // ─── Shared → Content Integration ───────────────────────────────────────
 
-test('content module estimateTokens uses consistent calculation', () => {
+test('content module estimateTokens uses language-aware calculation', () => {
   const tokens = estimateTokens('hello world — some sample text');
   assert.ok(tokens > 0, 'token estimate is positive');
-  assert.equal(tokens, Math.ceil('hello world — some sample text'.length / 4));
+  // Tokenx-based estimator: segments are language-aware, not chars/4
+  assert.ok(tokens >= 4 && tokens <= 15, `token estimate ${tokens} is within reasonable range`);
 });
 
 test('content module createInspectPayload wraps results correctly', () => {

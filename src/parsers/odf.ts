@@ -20,12 +20,17 @@ export async function parseOdf(filePath: string): Promise<ParserOutput> {
 async function parseOdt(filePath: string): Promise<ParserOutput> {
   const text = z.string().parse(await officeparser.parseOffice(filePath));
   const words = countWords(text);
-  const paragraphs = text.split(/\n+/).filter((s: string) => s.trim().length > 0).length;
+  const paragraphs = text.split(/\n\n+/).filter((s: string) => s.trim().length > 0).length;
   const pages = Math.max(1, Math.ceil(words / 250));
 
   return {
     fileType: 'ODT',
     metrics: { words, pages, paragraphs },
+    confidence: {
+      words: 'exact',
+      pages: 'estimated',
+      paragraphs: 'exact',
+    },
   };
 }
 
@@ -44,6 +49,11 @@ async function parseOds(buffer: Buffer): Promise<ParserOutput> {
   return {
     fileType: 'ODS',
     metrics: { sheets, rows, cells },
+    confidence: {
+      sheets: 'exact',
+      rows: 'exact',
+      cells: 'estimated',
+    },
   };
 }
 
@@ -60,5 +70,9 @@ async function parseOdp(buffer: Buffer): Promise<ParserOutput> {
   return {
     fileType: 'ODP',
     metrics: { words, slides },
+    confidence: {
+      words: 'estimated',
+      slides: 'exact',
+    },
   };
 }

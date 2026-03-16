@@ -22,8 +22,9 @@ import type { StructureResult } from './output/tree.js';
 import type { ParseResult } from './types.js';
 import type { FileEntry } from './types.js';
 import type { SccLanguage } from './scc.js';
-import { getExtension, writeStream } from './utils.js';
+import { formatBytes, getExtension, writeStream } from './utils.js';
 import { validateLargeFileLimit } from './cli-validation.js';
+import { sliceByTokens, estimateTokenCount } from './tokens.js';
 
 const CliOptionsSchema = z.object({
   byFile: z.boolean().optional(),
@@ -38,6 +39,9 @@ const CliOptionsSchema = z.object({
   largeFileLimit: z.string(),
   code: z.boolean(),
   structure: z.boolean().optional(),
+  tokenBudget: z.string().optional(),
+  quick: z.boolean().optional(),
+  showConfidence: z.boolean().optional(),
 }).passthrough();
 type CliOptions = z.infer<typeof CliOptionsSchema>;
 
@@ -74,9 +78,16 @@ export async function run(argv: string[]) {
     .option('--large-file-limit <mb>', 'skip files over this size in MB', '50')
     .option('--no-code', 'skip scc code analysis')
     .option('--structure', 'extract and display document structure')
+    .option('--token-budget <n>', 'truncate output to approximately N tokens')
+    .option('--quick', 'quick scan mode: file count and size by extension (skip parsing)')
+    .option('--show-confidence', 'show confidence levels for each metric')
     .action(async (directories: string[], opts: CliOptions) => {
       try {
-        await execute(directories, opts);
+        if (opts.quick) {
+          await executeQuick(directories, opts);
+        } else {
+          await execute(directories, opts);
+        }
       } catch (err: unknown) {
         const error = err as Error;
         await writeStream(process.stderr, `Error: ${error.message}\n`);
@@ -91,6 +102,67 @@ export async function run(argv: string[]) {
   registerTableCommands(program);
 
   await program.parseAsync(argv);
+}
+
+async function executeQuick(directories: string[], opts: CliOptions) {
+  const excludeDirs = opts.excludeDir
+    ? opts.excludeDir.split(',').map(d => d.trim())
+    : ['node_modules', '.git'];
+
+  const { files, skipped } = await findFiles(directories, {
+    includeExt: opts.includeExt,
+    excludeExt: opts.excludeExt,
+    excludeDir: excludeDirs,
+    noGitignore: !opts.gitignore,
+    largeFileLimit: validateLargeFileLimit(opts.largeFileLimit),
+  });
+
+  // Group by extension
+  const byExt: Record<string, { count: number; totalSize: number }> = {};
+  for (const f of files) {
+    const ext = getExtension(f.path);
+    if (!byExt[ext]) byExt[ext] = { count: 0, totalSize: 0 };
+    byExt[ext].count++;
+    byExt[ext].totalSize += f.size;
+  }
+
+  const result = {
+    totalFiles: files.length,
+    totalSize: files.reduce((sum, f) => sum + f.size, 0),
+    skippedFiles: skipped.length,
+    byExtension: byExt,
+  };
+
+  let output: string;
+  if (opts.format === 'json') {
+    output = JSON.stringify(result, null, 2);
+  } else {
+    const lines: string[] = ['Quick Scan Results:', ''];
+    const sorted = Object.entries(byExt).sort(([, a], [, b]) => b.count - a.count);
+    for (const [ext, data] of sorted) {
+      lines.push(`  .${ext}: ${data.count} files, ${formatBytes(data.totalSize)}`);
+    }
+    lines.push('', `Total: ${files.length} files, ${formatBytes(result.totalSize)}`);
+    if (skipped.length > 0) lines.push(`Skipped: ${skipped.length} file(s)`);
+    output = lines.join('\n');
+  }
+
+  output = applyTokenBudget(output, opts);
+
+  if (opts.output) {
+    await writeFile(opts.output, output);
+  } else {
+    await writeStream(process.stdout, output + '\n');
+  }
+}
+
+export function applyTokenBudget(output: string, opts: CliOptions): string {
+  if (!opts.tokenBudget) return output;
+  const budget = parseInt(opts.tokenBudget, 10);
+  if (isNaN(budget) || budget <= 0) return output;
+  const currentTokens = estimateTokenCount(output);
+  if (currentTokens <= budget) return output;
+  return sliceByTokens(output, 0, budget);
 }
 
 const STRUCTURABLE_EXTS = new Set(['docx', 'pdf', 'pptx', 'odt', 'odp']);
@@ -157,6 +229,7 @@ async function execute(directories: string[], opts: CliOptions) {
   const stats = aggregate(results, {
     byFile: opts.byFile,
     sort: opts.sort,
+    showConfidence: opts.showConfidence,
   });
 
   let sccData: SccLanguage[] | null = null;
@@ -222,6 +295,8 @@ async function execute(directories: string[], opts: CliOptions) {
 
     output = parts.join('\n') + '\n';
   }
+
+  output = applyTokenBudget(output, opts);
 
   if (opts.output) {
     await writeFile(opts.output, output);

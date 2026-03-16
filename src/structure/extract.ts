@@ -1,3 +1,5 @@
+import { countWords } from '../utils.js';
+import { estimateTokenCount } from '../tokens.js';
 import type { StructureNode, PageMapping, DocumentStructure } from './types.js';
 
 interface RawHeader {
@@ -198,6 +200,21 @@ export function findChunkSection(structure: DocumentStructure, start: number, en
 
   search(structure.rootNodes);
   return best;
+}
+
+/** Enrich structure nodes with word count and token estimates */
+export function enrichStructureWithMetrics(structure: DocumentStructure, content: string): void {
+  function enrichNode(node: StructureNode) {
+    const sectionText = content.slice(node.startChar, node.endChar);
+    node.wordCount = countWords(sectionText);
+    node.tokenEstimate = estimateTokenCount(sectionText);
+    for (const child of node.children) {
+      enrichNode(child);
+    }
+  }
+  for (const root of structure.rootNodes) {
+    enrichNode(root);
+  }
 }
 
 /** Get the content of a section from the original markdown */

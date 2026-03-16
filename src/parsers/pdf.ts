@@ -52,5 +52,9 @@ export async function parsePdf(filePath: string): Promise<ParserOutput> {
   return {
     fileType: 'PDF',
     metrics: { words, pages: data.numpages },
+    confidence: {
+      words: 'estimated',
+      pages: 'exact',
+    },
   };
 }

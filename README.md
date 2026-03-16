@@ -191,6 +191,7 @@ Scanned 23 documents (56,750 words, 201 pages) in 120ms
 | `--ci` | ASCII-only, no color | off |
 | `--large-file-limit <mb>` | Skip files over this size | `50` |
 | `--no-code` | Skip scc code analysis | off |
+| `--show-confidence` | Show confidence levels for each metric | off |
 
 ## Code Exploration
 
@@ -266,6 +267,8 @@ Available subpath exports:
 | `@cesarandreslopez/occ/sheet/types` | Sheet inspection types |
 | `@cesarandreslopez/occ/slide/inspect` | `inspectPresentation` — presentation inspection |
 | `@cesarandreslopez/occ/table/inspect` | Table extraction from documents |
+| `@cesarandreslopez/occ/types` | Shared types (`ConfidenceLevel`, `ParseResult`, `ParserOutput`, etc.) |
+| `@cesarandreslopez/occ/stats` | Stats types (`StatsRow`, `AggregateResult`) and `aggregate()` |
 
 TypeScript is an optional peer dependency (`>=5.0.0`). If you use the code exploration module programmatically, ensure TypeScript is available in your project.
 

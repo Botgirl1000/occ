@@ -38,6 +38,8 @@ const ALLOWED_DEPS = {
   'types':          [],
   'utils':          [],
   '@types':         [],
+  'tokens':         [],
+  'progress-event': [],
 
   // Layer 1: Infrastructure — depends on shared only
   'walker':         ['types', 'utils'],
@@ -46,16 +48,16 @@ const ALLOWED_DEPS = {
   'scc':            ['utils'],
   'progress':       [],
   'cli-validation': [],
-  'inspect':        [],
-  'structure':      [],
+  'inspect':        ['tokens'],
+  'structure':      ['utils', 'tokens'],
   'markdown':       ['utils'],
 
   // Layer 2: Output — depends on shared + infrastructure
   'output':         ['utils', 'stats', 'scc', 'structure'],
 
   // Layer 3: Domain commands — depends on shared + infrastructure + output
-  'code':           ['utils', 'cli-validation', 'output'],
-  'doc':            ['utils', 'cli-validation', 'inspect', 'structure', 'markdown', 'output'],
+  'code':           ['utils', 'cli-validation', 'output', 'progress-event'],
+  'doc':            ['utils', 'cli-validation', 'inspect', 'structure', 'markdown', 'output', 'walker', 'tokens'],
   'sheet':          ['utils', 'cli-validation', 'inspect', 'output'],
   'slide':          ['utils', 'cli-validation', 'inspect', 'output'],
   'table':          ['utils', 'cli-validation', 'inspect', 'output'],

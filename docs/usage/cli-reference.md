@@ -41,6 +41,7 @@ occ table inspect <file> ...
 | `--large-file-limit <mb>` | Skip files over this size in MB | `50` |
 | `--structure` | Extract and display document heading hierarchy | off |
 | `--no-code` | Skip scc code analysis | off |
+| `--show-confidence` | Show confidence levels for each metric | off |
 | `--version` / `-V` | Print version and exit | |
 | `--help` / `-h` | Print help and exit | |
 
@@ -150,6 +151,18 @@ Skip the scc code analysis section entirely:
 
 ```bash
 occ --no-code docs/
+```
+
+### `--show-confidence`
+
+Display confidence levels for each metric. In tabular mode, estimated metrics are annotated with a `~` suffix and a footnote is added. In JSON mode, each file row includes a `confidence` object mapping metric names to `"exact"` or `"estimated"`:
+
+```bash
+# Tabular — estimated metrics get a ~ suffix
+occ --show-confidence docs/
+
+# JSON — each row includes a "confidence" object
+occ --show-confidence --format json docs/
 ```
 
 ## Exit Codes

@@ -4,6 +4,7 @@ import { discoverCodeFiles } from './discover.js';
 import { getLanguageSpec, getModuleName, normalizePath } from './languages.js';
 import { parseCodeFile } from './parsers.js';
 import type { CodeCapabilities, CodebaseIndex, CodeEdge, CodeNode, ParsedFile } from './types.js';
+import type { OnProgress } from '../progress-event.js';
 
 export const BuildCodebaseOptionsSchema = z.object({
   repoRoot: z.string(),
@@ -35,17 +36,21 @@ function toCandidates(nodes: CodeNode[] | undefined): CodeEdge['candidates'] {
   }));
 }
 
-export async function buildCodebaseIndex(options: BuildCodebaseOptions): Promise<CodebaseIndex> {
+export async function buildCodebaseIndex(options: BuildCodebaseOptions, onProgress?: OnProgress): Promise<CodebaseIndex> {
   const repoRoot = path.resolve(options.repoRoot);
   const discovered = await discoverCodeFiles(repoRoot, {
     excludeDir: options.excludeDir,
     noGitignore: options.noGitignore,
   });
 
+  onProgress?.({ phase: 'discover', total: discovered.length, completed: discovered.length, detail: 'File discovery complete' });
+
   const parsedFiles: ParsedFile[] = [];
-  for (const filePath of discovered) {
+  for (let i = 0; i < discovered.length; i++) {
+    const filePath = discovered[i];
     const parsed = await parseCodeFile(filePath, { repoRoot });
     if (parsed) parsedFiles.push(parsed);
+    onProgress?.({ phase: 'parse', total: discovered.length, completed: i + 1, detail: filePath });
   }
 
   const nodes: CodeNode[] = [];
@@ -369,6 +374,8 @@ export async function buildCodebaseIndex(options: BuildCodebaseOptions): Promise
       });
     }
   }
+
+  onProgress?.({ phase: 'index', total: 1, completed: 1, detail: 'Index construction complete' });
 
   return {
     repoRoot,

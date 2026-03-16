@@ -17,7 +17,8 @@ export interface StatsRow {
   rows: number;
   cells: number;
   slides: number;
-  [key: string]: string | number | boolean | undefined;
+  confidence?: Record<string, 'exact' | 'estimated'>;
+  [key: string]: string | number | boolean | Record<string, 'exact' | 'estimated'> | undefined;
 }
 
 export interface ColumnVisibility {
@@ -29,11 +30,13 @@ export interface AggregateResult {
   totals: StatsRow;
   columns: ColumnVisibility;
   mode: string;
+  showConfidence: boolean;
 }
 
 export const AggregateOptionsSchema = z.object({
   byFile: z.boolean().optional(),
   sort: z.string().optional(),
+  showConfidence: z.boolean().optional(),
 });
 export type AggregateOptions = z.infer<typeof AggregateOptionsSchema>;
 
@@ -43,12 +46,12 @@ export function aggregate(results: ParseResult[], options: AggregateOptions = {}
   const { byFile = false, sort = 'files' } = options;
 
   if (byFile) {
-    return aggregateByFile(results, sort);
+    return aggregateByFile(results, sort, options);
   }
-  return aggregateByType(results, sort);
+  return aggregateByType(results, sort, options);
 }
 
-function aggregateByType(results: ParseResult[], sort: string): AggregateResult {
+function aggregateByType(results: ParseResult[], sort: string, options: AggregateOptions): AggregateResult {
   const groups: Record<string, StatsRow> = {};
 
   for (const r of results) {
@@ -65,15 +68,24 @@ function aggregateByType(results: ParseResult[], sort: string): AggregateResult 
     if (r.success && r.metrics) {
       const m = r.metrics;
       for (const f of METRIC_FIELDS) {
-        if (m[f] != null) { (g[f] as number) += m[f]; g[hasKey(f)] = true; }
+        if (m[f] != null) {
+          (g[f] as number) += m[f];
+          g[hasKey(f)] = true;
+          if (r.confidence?.[f]) {
+            if (!g.confidence) g.confidence = {};
+            if (r.confidence[f] === 'estimated' || !g.confidence[f]) {
+              g.confidence[f] = r.confidence[f];
+            }
+          }
+        }
       }
     }
   }
 
-  return finalize(Object.values(groups), sort, 'grouped');
+  return finalize(Object.values(groups), sort, 'grouped', options);
 }
 
-function aggregateByFile(results: ParseResult[], sort: string): AggregateResult {
+function aggregateByFile(results: ParseResult[], sort: string, options: AggregateOptions): AggregateResult {
   const rows: StatsRow[] = results.map(r => {
     const row: StatsRow = {
       fileType: r.success ? r.fileType : 'Unreadable',
@@ -87,17 +99,18 @@ function aggregateByFile(results: ParseResult[], sort: string): AggregateResult 
       row[f] = r.metrics?.[f] || 0;
       row[hasKey(f)] = r.metrics?.[f] != null;
     }
+    if (r.confidence) row.confidence = r.confidence;
     return row;
   });
 
-  return finalize(rows, sort, 'by-file');
+  return finalize(rows, sort, 'by-file', options);
 }
 
-function finalize(rows: StatsRow[], sort: string, mode: string): AggregateResult {
+function finalize(rows: StatsRow[], sort: string, mode: string, options: AggregateOptions = {}): AggregateResult {
   sortRows(rows, sort);
   const totals = computeTotals(rows);
   const columns = detectColumns(rows);
-  return { rows, totals, columns, mode };
+  return { rows, totals, columns, mode, showConfidence: !!options.showConfidence };
 }
 
 function sortRows(rows: StatsRow[], sort: string) {

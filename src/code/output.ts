@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { formatNumber } from '../utils.js';
 import { sectionHeader, stripAnsi, tableChars } from '../output/tabular.js';
 import type { CallChain, ClassTreeAnalysis, CodeCommandPayload, CodeNode, CodeSearchResult, ContentMatch, DependencyAnalysis, RelationMatch } from './types.js';
+import type { FusedSearchResult } from './query.js';
 
 type ColorFn = (value: string) => string;
 
@@ -291,4 +292,27 @@ export function formatChains(chains: CallChain[], ci = false): string {
     if (index < chains.length - 1) lines.push('');
   }
   return lines.join('\n') + '\n';
+}
+
+export function formatFusedResults(results: FusedSearchResult[], ci = false): string {
+  const c = palette(ci);
+  if (results.length === 0) return `${c.dim('No fused search results found.')}\n`;
+
+  const table = new Table({
+    head: [c.key('Name'), c.key('Type'), c.key('Location'), c.key('Score'), c.key('Sources')],
+    chars: tableChars(ci),
+    style: { head: [], border: [] },
+  });
+
+  for (const result of results) {
+    table.push([
+      c.value(result.name.slice(0, 60)),
+      result.type,
+      result.relativePath ? `${result.relativePath}${result.line ? `:${result.line}` : ''}` : result.path,
+      result.score.toFixed(4),
+      result.sources.map(s => `${s.method}#${s.rank}`).join(', '),
+    ]);
+  }
+
+  return `${tableTitle('Fused Search', addSeparators(table.toString(), ci), ci)}\n`;
 }

@@ -423,6 +423,94 @@ export function analyzeModuleCoupling(index: CodebaseIndex, modulePath: string):
   };
 }
 
+export interface FusedSearchResult {
+  nodeId: string;
+  path: string;
+  relativePath?: string;
+  name: string;
+  type: CodeNodeType;
+  line?: number;
+  score: number;
+  sources: Array<{ method: string; rank: number }>;
+}
+
+export interface FusedSearchOptions {
+  weights?: { name?: number; pattern?: number; content?: number };
+  limit?: number;
+}
+
+/** Fused search: runs name, pattern, and content search, merges via Reciprocal Rank Fusion */
+export function fusedSearch(index: CodebaseIndex, query: string, options: FusedSearchOptions = {}): FusedSearchResult[] {
+  const { weights = {}, limit = 50 } = options;
+  const nameWeight = weights.name ?? 3;
+  const patternWeight = weights.pattern ?? 2;
+  const contentWeight = weights.content ?? 1;
+  const RRF_K = 60;
+
+  // Run all three searches
+  const nameResults = findByName(index, query, undefined, undefined, 100);
+  const patternResults = findByPattern(index, query, undefined, 200);
+  const contentResults = findContent(index, query, 200);
+
+  // Build fused scores by node identity
+  const scores = new Map<string, FusedSearchResult>();
+
+  function ensureEntry(key: string, node: CodeNode | { path: string; relativePath?: string; name: string; type: string; line?: number }): FusedSearchResult {
+    let entry = scores.get(key);
+    if (!entry) {
+      entry = {
+        nodeId: key,
+        path: 'path' in node ? node.path : '',
+        relativePath: 'relativePath' in node ? node.relativePath : undefined,
+        name: node.name,
+        type: (node.type as CodeNodeType) ?? 'function',
+        line: 'line' in node ? node.line : undefined,
+        score: 0,
+        sources: [],
+      };
+      scores.set(key, entry);
+    }
+    return entry;
+  }
+
+  // Name results — weight by rank
+  for (let i = 0; i < nameResults.length; i++) {
+    const r = nameResults[i];
+    const key = r.node.id;
+    const entry = ensureEntry(key, r.node);
+    entry.score += nameWeight / (RRF_K + i + 1);
+    entry.sources.push({ method: 'name', rank: i + 1 });
+  }
+
+  // Pattern results — weight by rank
+  for (let i = 0; i < patternResults.length; i++) {
+    const r = patternResults[i];
+    const key = r.node.id;
+    const entry = ensureEntry(key, r.node);
+    entry.score += patternWeight / (RRF_K + i + 1);
+    entry.sources.push({ method: 'pattern', rank: i + 1 });
+  }
+
+  // Content results — use file:line as key since these aren't nodes
+  for (let i = 0; i < contentResults.length; i++) {
+    const r = contentResults[i];
+    const key = `content:${r.path}:${r.line}`;
+    const entry = ensureEntry(key, {
+      path: r.path,
+      relativePath: r.relativePath,
+      name: r.snippet.slice(0, 60),
+      type: 'variable',
+      line: r.line,
+    });
+    entry.score += contentWeight / (RRF_K + i + 1);
+    entry.sources.push({ method: 'content', rank: i + 1 });
+  }
+
+  return [...scores.values()]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}
+
 export interface KeySection {
   content: string;
   startLine: number;

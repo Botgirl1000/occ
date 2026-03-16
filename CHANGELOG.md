@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-03-16
+
+### Added
+
+- `--show-confidence` flag displays confidence levels (`exact` or `estimated`) for each metric in both tabular and JSON output
+- Tabular output annotates estimated metrics with a `~` suffix and a `~ estimated metric` footnote when `--show-confidence` is enabled
+- JSON output includes a `confidence` object per file row (e.g. `{ "words": "exact", "pages": "estimated" }`) when `--show-confidence` is enabled
+- Confidence merging in grouped mode: if any file in a group has an estimated metric, the group's confidence for that metric is `estimated`
+- `./types` and `./stats` subpath exports in `package.json` — consumers can now import `ConfidenceLevel`, `ParseResult`, `StatsRow`, and `AggregateResult` directly
+
 ## [0.5.1] - 2026-03-16
 
 ### Fixed
@@ -154,6 +164,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Progress bar with ETA
 - Auto-download of scc binary during `npm install` (skip with `SCC_SKIP_DOWNLOAD=1`)
 
+[0.6.0]: https://github.com/cesarandreslopez/occ/releases/tag/v0.6.0
 [0.5.1]: https://github.com/cesarandreslopez/occ/releases/tag/v0.5.1
 [0.5.0]: https://github.com/cesarandreslopez/occ/releases/tag/v0.5.0
 [0.4.1]: https://github.com/cesarandreslopez/occ/releases/tag/v0.4.1

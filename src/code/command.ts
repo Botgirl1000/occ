@@ -16,12 +16,14 @@ import {
   findByPattern,
   findByType,
   findContent,
+  fusedSearch,
 } from './query.js';
 import {
   formatChains,
   formatClassTree,
   formatContentResults,
   formatDependencies,
+  formatFusedResults,
   formatPayloadJson,
   formatRelationResults,
   formatSearchResults,
@@ -218,6 +220,29 @@ export function registerCodeCommands(program: Command) {
     const output = options.format === 'json'
       ? formatPayloadJson(payload)
       : formatClassTree(results, options.ci);
+    await emit(output.endsWith('\n') ? output : `${output}\n`, options);
+  });
+
+  const findFusedCmd = find.command('fused <query>').description('Fused search: combines name, pattern, and content search with rank fusion');
+  addSharedOptions(findFusedCmd, { includeLimit: true });
+  findFusedCmd.option('--weights <spec>', 'weights as name:N,pattern:N,content:N', 'name:3,pattern:2,content:1');
+  findFusedCmd.action(async (query: string, _options: CodeCommandOptions, command: Command) => {
+    const options = getOptions(command);
+    const index = await withIndex(options);
+    const weightsStr = (options as Record<string, string>).weights ?? 'name:3,pattern:2,content:1';
+    const weights: Record<string, number> = {};
+    for (const pair of weightsStr.split(',')) {
+      const [key, val] = pair.split(':');
+      if (key && val) weights[key.trim()] = parseFloat(val);
+    }
+    const results = fusedSearch(index, query, {
+      weights: { name: weights.name, pattern: weights.pattern, content: weights.content },
+      limit: parsePositiveInt(options.limit, 50, 'limit'),
+    });
+    const payload = createPayload(index, { command: 'code.find.fused', value: query, weights }, results);
+    const output = options.format === 'json'
+      ? formatPayloadJson(payload)
+      : formatFusedResults(results, options.ci);
     await emit(output.endsWith('\n') ? output : `${output}\n`, options);
   });
 }

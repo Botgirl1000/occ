@@ -1,6 +1,7 @@
 import type { CodebaseIndex, ParsedFile } from './types.js';
 import { buildCodebaseIndex, type BuildCodebaseOptions } from './build.js';
 import { countWords } from '../utils.js';
+import type { OnProgress } from '../progress-event.js';
 
 export interface CodeChunk {
   filePath: string;
@@ -161,7 +162,9 @@ export function chunkFromIndex(
 }
 
 /** Discover, parse, and chunk an entire codebase */
-export async function chunkCodebase(options: BuildCodebaseOptions & ChunkOptions): Promise<CodeChunk[]> {
-  const index = await buildCodebaseIndex(options);
-  return chunkFromIndex(index, options);
+export async function chunkCodebase(options: BuildCodebaseOptions & ChunkOptions, onProgress?: OnProgress): Promise<CodeChunk[]> {
+  const index = await buildCodebaseIndex(options, onProgress);
+  const chunks = chunkFromIndex(index, options);
+  onProgress?.({ phase: 'chunk', total: chunks.length, completed: chunks.length, detail: 'Chunking complete' });
+  return chunks;
 }

@@ -1,6 +1,6 @@
 {
   "name": "@cesarandreslopez/occ",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Office Cloc and Count — scc-style summary tables for office documents",
   "type": "module",
   "bin": {
@@ -30,7 +30,8 @@
     "pptx",
     "pdf",
     "scc",
-    "cli"
+    "cli",
+    "confidence"
   ],
   "exports": {
     ".": {
@@ -104,6 +105,30 @@
     "./table/inspect": {
       "types": "./dist/src/table/inspect.d.ts",
       "default": "./dist/src/table/inspect.js"
+    },
+    "./tokens": {
+      "types": "./dist/src/tokens.d.ts",
+      "default": "./dist/src/tokens.js"
+    },
+    "./doc/entities": {
+      "types": "./dist/src/doc/entities.d.ts",
+      "default": "./dist/src/doc/entities.js"
+    },
+    "./doc/references": {
+      "types": "./dist/src/doc/references.d.ts",
+      "default": "./dist/src/doc/references.js"
+    },
+    "./progress-event": {
+      "types": "./dist/src/progress-event.d.ts",
+      "default": "./dist/src/progress-event.js"
+    },
+    "./types": {
+      "types": "./dist/src/types.d.ts",
+      "default": "./dist/src/types.js"
+    },
+    "./stats": {
+      "types": "./dist/src/stats.d.ts",
+      "default": "./dist/src/stats.js"
     }
   },
   "files": [

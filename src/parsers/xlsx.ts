@@ -30,5 +30,10 @@ export async function parseXlsx(filePath: string): Promise<ParserOutput> {
   return {
     fileType: 'Excel',
     metrics: { sheets, rows, cells },
+    confidence: {
+      sheets: 'exact',
+      rows: 'exact',
+      cells: 'exact',
+    },
   };
 }
