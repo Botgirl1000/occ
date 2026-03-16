@@ -46,6 +46,12 @@ export const ParsedSymbolSchema = z.object({
   containerName: z.string().optional(),
   signature: z.string().optional(),
   exported: z.boolean().optional(),
+  fullSignature: z.string().optional(),
+  returnType: z.string().optional(),
+  jsdoc: z.string().optional(),
+  isAsync: z.boolean().optional(),
+  isStatic: z.boolean().optional(),
+  visibility: z.enum(['public', 'protected', 'private']).optional(),
 });
 export type ParsedSymbol = z.infer<typeof ParsedSymbolSchema>;
 

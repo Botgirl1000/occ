@@ -1,6 +1,6 @@
 {
   "name": "@cesarandreslopez/occ",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Office Cloc and Count — scc-style summary tables for office documents",
   "type": "module",
   "bin": {
@@ -33,11 +33,78 @@
     "cli"
   ],
   "exports": {
-    ".": "./dist/bin/occ.js",
-    "./code/build": "./dist/src/code/build.js",
-    "./code/types": "./dist/src/code/types.js",
-    "./code/query": "./dist/src/code/query.js",
-    "./code/discover": "./dist/src/code/discover.js"
+    ".": {
+      "types": "./dist/bin/occ.d.ts",
+      "default": "./dist/bin/occ.js"
+    },
+    "./code/build": {
+      "types": "./dist/src/code/build.d.ts",
+      "default": "./dist/src/code/build.js"
+    },
+    "./code/types": {
+      "types": "./dist/src/code/types.d.ts",
+      "default": "./dist/src/code/types.js"
+    },
+    "./code/query": {
+      "types": "./dist/src/code/query.d.ts",
+      "default": "./dist/src/code/query.js"
+    },
+    "./code/discover": {
+      "types": "./dist/src/code/discover.d.ts",
+      "default": "./dist/src/code/discover.js"
+    },
+    "./code/chunk": {
+      "types": "./dist/src/code/chunk.d.ts",
+      "default": "./dist/src/code/chunk.js"
+    },
+    "./code/cache": {
+      "types": "./dist/src/code/cache.d.ts",
+      "default": "./dist/src/code/cache.js"
+    },
+    "./doc/inspect": {
+      "types": "./dist/src/doc/inspect.d.ts",
+      "default": "./dist/src/doc/inspect.js"
+    },
+    "./doc/types": {
+      "types": "./dist/src/doc/types.d.ts",
+      "default": "./dist/src/doc/types.js"
+    },
+    "./doc/discover": {
+      "types": "./dist/src/doc/discover.d.ts",
+      "default": "./dist/src/doc/discover.js"
+    },
+    "./doc/batch": {
+      "types": "./dist/src/doc/batch.d.ts",
+      "default": "./dist/src/doc/batch.js"
+    },
+    "./markdown/convert": {
+      "types": "./dist/src/markdown/convert.d.ts",
+      "default": "./dist/src/markdown/convert.js"
+    },
+    "./structure/extract": {
+      "types": "./dist/src/structure/extract.d.ts",
+      "default": "./dist/src/structure/extract.js"
+    },
+    "./structure/types": {
+      "types": "./dist/src/structure/types.d.ts",
+      "default": "./dist/src/structure/types.js"
+    },
+    "./sheet/inspect": {
+      "types": "./dist/src/sheet/inspect.d.ts",
+      "default": "./dist/src/sheet/inspect.js"
+    },
+    "./sheet/types": {
+      "types": "./dist/src/sheet/types.d.ts",
+      "default": "./dist/src/sheet/types.js"
+    },
+    "./slide/inspect": {
+      "types": "./dist/src/slide/inspect.d.ts",
+      "default": "./dist/src/slide/inspect.js"
+    },
+    "./table/inspect": {
+      "types": "./dist/src/table/inspect.d.ts",
+      "default": "./dist/src/table/inspect.js"
+    }
   },
   "files": [
     "dist/",
@@ -50,7 +117,7 @@
     "build": "tsc",
     "dev": "tsx bin/occ.ts",
     "start": "node dist/bin/occ.js",
-    "test": "npm run build && node --import tsx --test test/**/*.test.ts",
+    "test": "npm run build && node --import tsx --test test/*.test.ts",
     "prepublishOnly": "npm run build",
     "postinstall": "node scripts/postinstall.js"
   },

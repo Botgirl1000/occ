@@ -11,6 +11,7 @@ import type {
   CodeSearchResult,
   ContentMatch,
   DependencyAnalysis,
+  ParsedFile,
   RelationMatch,
 } from './types.js';
 
@@ -318,4 +319,186 @@ export function analyzeTree(index: CodebaseIndex, className: string, file?: stri
     .sort(compareNodes);
 
   return { target, parents, children, methods };
+}
+
+export interface ModuleCoupling {
+  module: string;
+  publicSymbolCount: number;
+  afferentCoupling: number;
+  efferentCoupling: number;
+  instability: number;
+  topImporters: string[];
+  topDependencies: string[];
+  keyClasses: Array<{
+    name: string;
+    parents: string[];
+    childCount: number;
+    methodCount: number;
+  }>;
+}
+
+export function analyzeModuleCoupling(index: CodebaseIndex, modulePath: string): ModuleCoupling {
+  const normalizedModule = normalizePath(modulePath.replace(/\\/g, '/'));
+  const dirPrefix = normalizedModule.endsWith('/') ? normalizedModule : `${normalizedModule}/`;
+
+  // Find all files belonging to this module
+  const moduleFilePaths = new Set<string>();
+  for (const node of index.nodes) {
+    if (node.type === 'file' && node.relativePath?.startsWith(dirPrefix)) {
+      moduleFilePaths.add(node.path);
+    }
+  }
+
+  // Count public symbols (exported)
+  let publicSymbolCount = 0;
+  for (const file of index.files) {
+    if (!moduleFilePaths.has(file.path)) continue;
+    for (const sym of file.symbols) {
+      if (sym.exported) publicSymbolCount++;
+    }
+  }
+
+  // Afferent coupling: external modules that import from this module
+  const importerModules = new Set<string>();
+  const importerDetails: string[] = [];
+  // Efferent coupling: external modules this module imports from
+  const dependencyModules = new Set<string>();
+  const dependencyDetails: string[] = [];
+
+  for (const edge of index.edges) {
+    if (edge.type !== 'imports') continue;
+    const fromFile = index.nodes.find(n => n.id === edge.from);
+    const toFile = edge.to ? index.nodes.find(n => n.id === edge.to) : undefined;
+    if (!fromFile) continue;
+
+    const fromInside = moduleFilePaths.has(fromFile.path);
+    const toInside = toFile ? moduleFilePaths.has(toFile.path) : false;
+
+    if (!fromInside && toInside) {
+      // External file imports from our module
+      const fromModule = fromFile.relativePath?.split('/').slice(0, -1).join('/') ?? '';
+      if (!importerModules.has(fromModule)) {
+        importerModules.add(fromModule);
+        importerDetails.push(fromModule || (fromFile.relativePath ?? fromFile.name));
+      }
+    }
+
+    if (fromInside && !toInside && toFile && edge.importKind !== 'external') {
+      // Our module imports from external internal module
+      const toModule = toFile.relativePath?.split('/').slice(0, -1).join('/') ?? '';
+      if (!dependencyModules.has(toModule)) {
+        dependencyModules.add(toModule);
+        dependencyDetails.push(toModule || (toFile.relativePath ?? toFile.name));
+      }
+    }
+  }
+
+  const ca = importerModules.size;
+  const ce = dependencyModules.size;
+  const instability = ca + ce > 0 ? ce / (ca + ce) : 0;
+
+  // Key classes
+  const classNodes = index.nodes.filter(
+    n => n.type === 'class' && moduleFilePaths.has(n.path),
+  );
+  const keyClasses = classNodes.map(classNode => {
+    const tree = analyzeTree(index, classNode.name, classNode.relativePath);
+    return {
+      name: classNode.name,
+      parents: tree?.parents.map(p => p.to?.name ?? p.edge.targetName ?? '') ?? [],
+      childCount: tree?.children.length ?? 0,
+      methodCount: tree?.methods.length ?? 0,
+    };
+  });
+
+  return {
+    module: modulePath,
+    publicSymbolCount,
+    afferentCoupling: ca,
+    efferentCoupling: ce,
+    instability: Math.round(instability * 1000) / 1000,
+    topImporters: importerDetails.slice(0, 10),
+    topDependencies: dependencyDetails.slice(0, 10),
+    keyClasses: keyClasses.sort((a, b) => (b.methodCount + b.childCount) - (a.methodCount + a.childCount)).slice(0, 10),
+  };
+}
+
+export interface KeySection {
+  content: string;
+  startLine: number;
+  endLine: number;
+  reason: string;
+}
+
+/** Select the most architecturally significant portion of a file */
+export function extractKeySection(file: ParsedFile, maxChars: number): KeySection {
+  const lines = file.lines;
+  const totalContent = file.content;
+
+  if (totalContent.length <= maxChars) {
+    return { content: totalContent, startLine: 1, endLine: lines.length, reason: 'full file' };
+  }
+
+  // Prioritize: exported class definitions > exported functions > public API surface > file start
+  const exportedSymbols = file.symbols.filter(s => s.exported);
+  const exportedClasses = exportedSymbols.filter(s => s.type === 'class');
+  const exportedFunctions = exportedSymbols.filter(s => s.type === 'function' && !s.containerName);
+
+  // Try exported class first (including its methods)
+  if (exportedClasses.length > 0) {
+    const cls = exportedClasses[0];
+    const section = extractSymbolRegion(lines, cls.line - 1, maxChars);
+    if (section) return { ...section, reason: `exported class ${cls.name}` };
+  }
+
+  // Try exported functions
+  if (exportedFunctions.length > 0) {
+    const startLine = exportedFunctions[0].line - 1;
+    const section = extractSymbolRegion(lines, startLine, maxChars);
+    if (section) return { ...section, reason: `exported functions starting at ${exportedFunctions[0].name}` };
+  }
+
+  // Try all exported symbols
+  if (exportedSymbols.length > 0) {
+    const startLine = exportedSymbols[0].line - 1;
+    const section = extractSymbolRegion(lines, startLine, maxChars);
+    if (section) return { ...section, reason: 'public API surface' };
+  }
+
+  // Fallback: first maxChars of file
+  return extractFromStart(lines, maxChars);
+}
+
+function extractSymbolRegion(lines: string[], startLineIdx: number, maxChars: number): { content: string; startLine: number; endLine: number } | null {
+  // Include a few lines before for context (imports/JSDoc)
+  const contextStart = Math.max(0, startLineIdx - 3);
+  let chars = 0;
+  let endIdx = contextStart;
+
+  for (let i = contextStart; i < lines.length; i++) {
+    chars += lines[i].length + 1;
+    endIdx = i;
+    if (chars >= maxChars) break;
+  }
+
+  const content = lines.slice(contextStart, endIdx + 1).join('\n');
+  return { content, startLine: contextStart + 1, endLine: endIdx + 1 };
+}
+
+function extractFromStart(lines: string[], maxChars: number): KeySection {
+  let chars = 0;
+  let endIdx = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    chars += lines[i].length + 1;
+    endIdx = i;
+    if (chars >= maxChars) break;
+  }
+
+  return {
+    content: lines.slice(0, endIdx + 1).join('\n'),
+    startLine: 1,
+    endLine: endIdx + 1,
+    reason: 'file start',
+  };
 }

@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import mammoth from 'mammoth';
 import pdf from 'pdf-parse';
 import JSZip from 'jszip';
+import XLSX from 'xlsx';
 import officeparser from 'officeparser';
 import TurndownService from 'turndown';
 import { z } from 'zod';
@@ -118,7 +119,69 @@ async function odpToMarkdown(filePath: string): Promise<string> {
   return parts.join('\n\n');
 }
 
-/** Convert a document to markdown. Returns null for unsupported formats (xlsx, ods). */
+/** Convert an XLSX file to markdown with table formatting per sheet */
+async function xlsxToMarkdown(filePath: string, maxRows = 20): Promise<string> {
+  const buffer = await readFile(filePath);
+  const workbook = XLSX.read(buffer, {
+    type: 'buffer',
+    cellDates: true,
+    cellText: true,
+  });
+
+  const parts: string[] = [];
+
+  for (const sheetName of workbook.SheetNames) {
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet?.['!ref']) continue;
+
+    const range = XLSX.utils.decode_range(sheet['!ref']);
+    const totalRows = range.e.r - range.s.r + 1;
+    const totalCols = range.e.c - range.s.c + 1;
+
+    parts.push(`## ${sheetName}`);
+    parts.push('');
+
+    if (totalCols === 0 || totalRows === 0) {
+      parts.push('*Empty sheet*');
+      parts.push('');
+      continue;
+    }
+
+    // Read header row
+    const headers: string[] = [];
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cell = sheet[XLSX.utils.encode_cell({ r: range.s.r, c: col })];
+      const raw = cell?.v != null ? String(cell.w ?? cell.v) : XLSX.utils.encode_col(col);
+      headers.push(raw.replace(/\|/g, '\\|').replace(/\n/g, ' '));
+    }
+
+    // Build markdown table
+    parts.push(`| ${headers.join(' | ')} |`);
+    parts.push(`| ${headers.map(() => '---').join(' | ')} |`);
+
+    const dataRows = Math.min(maxRows, totalRows - 1);
+    for (let row = range.s.r + 1; row <= range.s.r + dataRows; row++) {
+      const values: string[] = [];
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cell = sheet[XLSX.utils.encode_cell({ r: row, c: col })];
+        const val = cell?.v != null ? String(cell.w ?? cell.v) : '';
+        values.push(val.replace(/\|/g, '\\|').replace(/\n/g, ' '));
+      }
+      parts.push(`| ${values.join(' | ')} |`);
+    }
+
+    if (totalRows - 1 > maxRows) {
+      parts.push('');
+      parts.push(`*...${totalRows - 1 - maxRows} more rows*`);
+    }
+
+    parts.push('');
+  }
+
+  return parts.join('\n');
+}
+
+/** Convert a document to markdown. Returns null for unsupported formats (ods). */
 export async function documentToMarkdown(filePath: string): Promise<string | null> {
   const ext = getExtension(filePath);
 
@@ -128,7 +191,7 @@ export async function documentToMarkdown(filePath: string): Promise<string | nul
     case 'pptx': return pptxToMarkdown(filePath);
     case 'odt': return odtToMarkdown(filePath);
     case 'odp': return odpToMarkdown(filePath);
-    case 'xlsx':
+    case 'xlsx': return xlsxToMarkdown(filePath);
     case 'ods':
       return null;
     default:

@@ -115,6 +115,8 @@ occ/
 │   ├── code/
 │   │   ├── command.ts      # `occ code` command registration
 │   │   ├── build.ts        # Graph builder + resolution pipeline
+│   │   ├── cache.ts        # Index caching utilities
+│   │   ├── chunk.ts        # Semantic code chunking
 │   │   ├── discover.ts     # Code file discovery
 │   │   ├── languages.ts    # Language support + import/path helpers
 │   │   ├── parsers.ts      # JS/TS + Python-first parsers
@@ -123,6 +125,8 @@ occ/
 │   │   └── types.ts        # Graph/query/output types
 │   ├── doc/
 │   │   ├── command.ts      # `occ doc` command registration
+│   │   ├── batch.ts        # Batch document inspection
+│   │   ├── discover.ts     # Document file discovery
 │   │   ├── inspect.ts      # Document format router
 │   │   ├── inspect-docx.ts # DOCX metadata + content extraction
 │   │   ├── inspect-odt.ts  # ODT metadata + content extraction

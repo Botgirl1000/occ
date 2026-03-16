@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-03-16
+
+### Fixed
+
+- XLSX header cells in markdown conversion now escape pipe (`|`) and newline characters, matching the existing data row escaping
+- `npm test` script uses `test/*.test.ts` instead of `test/**/*.test.ts` for Node 18 compatibility (shell `**` glob requires bash globstar or Node 21+)
+- Remove duplicate `countWords` function in `src/code/chunk.ts`; now imports from shared `src/utils.ts`
+- Add `types` conditions to all `package.json` subpath exports so TypeScript consumers using `moduleResolution: "NodeNext"` resolve `.d.ts` files correctly
+
 ## [0.5.0] - 2026-03-15
 
 ### Added
@@ -145,6 +154,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Progress bar with ETA
 - Auto-download of scc binary during `npm install` (skip with `SCC_SKIP_DOWNLOAD=1`)
 
+[0.5.1]: https://github.com/cesarandreslopez/occ/releases/tag/v0.5.1
 [0.5.0]: https://github.com/cesarandreslopez/occ/releases/tag/v0.5.0
 [0.4.1]: https://github.com/cesarandreslopez/occ/releases/tag/v0.4.1
 [0.4.0]: https://github.com/cesarandreslopez/occ/releases/tag/v0.4.0

@@ -39,6 +39,49 @@ function hasExportModifier(node: ts.Node): boolean {
   return !!ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword);
 }
 
+function hasModifierKind(node: ts.Node, kind: ts.SyntaxKind): boolean {
+  if (!ts.canHaveModifiers(node)) return false;
+  return !!ts.getModifiers(node)?.some((modifier) => modifier.kind === kind);
+}
+
+function getVisibility(node: ts.Node): 'public' | 'protected' | 'private' | undefined {
+  if (hasModifierKind(node, ts.SyntaxKind.PrivateKeyword)) return 'private';
+  if (hasModifierKind(node, ts.SyntaxKind.ProtectedKeyword)) return 'protected';
+  if (hasModifierKind(node, ts.SyntaxKind.PublicKeyword)) return 'public';
+  return undefined;
+}
+
+function getLeadingJsDoc(sourceFile: ts.SourceFile, node: ts.Node): string | undefined {
+  const fullText = sourceFile.getFullText();
+  const nodeStart = node.getFullStart();
+  const leadingText = fullText.slice(Math.max(0, nodeStart), node.getStart(sourceFile));
+  const jsdocMatch = leadingText.match(/\/\*\*([\s\S]*?)\*\//);
+  if (!jsdocMatch) return undefined;
+  return jsdocMatch[0]
+    .replace(/^\/\*\*\s*/, '')
+    .replace(/\s*\*\/$/, '')
+    .split('\n')
+    .map(line => line.replace(/^\s*\*\s?/, ''))
+    .join('\n')
+    .trim() || undefined;
+}
+
+function buildFullSignature(
+  sourceFile: ts.SourceFile,
+  node: ts.FunctionDeclaration | ts.MethodDeclaration | ts.ArrowFunction | ts.FunctionExpression,
+): string {
+  const params = node.parameters.map(p => p.getText(sourceFile)).join(', ');
+  const returnType = node.type ? node.type.getText(sourceFile) : undefined;
+  return returnType ? `(${params}) => ${returnType}` : `(${params})`;
+}
+
+function getReturnTypeText(
+  sourceFile: ts.SourceFile,
+  node: ts.FunctionDeclaration | ts.MethodDeclaration | ts.ArrowFunction | ts.FunctionExpression,
+): string | undefined {
+  return node.type ? node.type.getText(sourceFile) : undefined;
+}
+
 function pushUniqueSymbol(symbols: ParsedSymbol[], next: ParsedSymbol) {
   if (!symbols.some(symbol => symbol.type === next.type && symbol.name === next.name && symbol.line === next.line && symbol.containerName === next.containerName)) {
     symbols.push(next);
@@ -72,15 +115,30 @@ function parseTypescriptFile(filePath: string, content: string, context: ParserC
   const inheritances: ParsedInheritance[] = [];
   const stack: Array<{ type: 'class' | 'function'; name: string; line: number }> = [];
 
-  const pushFunction = (name: string, node: ts.Node, signature?: string, exported?: boolean) => {
+  const pushFunction = (name: string, node: ts.Node, opts: {
+    signature?: string;
+    exported?: boolean;
+    fullSignature?: string;
+    returnType?: string;
+    jsdoc?: string;
+    isAsync?: boolean;
+    isStatic?: boolean;
+    visibility?: 'public' | 'protected' | 'private';
+  }) => {
     const currentClass = [...stack].reverse().find(entry => entry.type === 'class');
     pushUniqueSymbol(symbols, {
       type: 'function',
       name,
       line: lineOf(sourceFile, node),
       containerName: currentClass?.name,
-      signature,
-      exported,
+      signature: opts.signature,
+      exported: opts.exported,
+      fullSignature: opts.fullSignature,
+      returnType: opts.returnType,
+      jsdoc: opts.jsdoc,
+      isAsync: opts.isAsync || undefined,
+      isStatic: opts.isStatic || undefined,
+      visibility: opts.visibility,
     });
   };
 
@@ -112,7 +170,14 @@ function parseTypescriptFile(filePath: string, content: string, context: ParserC
       });
     } else if (ts.isFunctionDeclaration(node) && node.name?.text) {
       const name = node.name.text;
-      pushFunction(name, node, node.parameters.map(parameter => parameter.name.getText(sourceFile)).join(', '), hasExportModifier(node));
+      pushFunction(name, node, {
+        signature: node.parameters.map(parameter => parameter.name.getText(sourceFile)).join(', '),
+        exported: hasExportModifier(node),
+        fullSignature: buildFullSignature(sourceFile, node),
+        returnType: getReturnTypeText(sourceFile, node),
+        jsdoc: getLeadingJsDoc(sourceFile, node),
+        isAsync: hasModifierKind(node, ts.SyntaxKind.AsyncKeyword) || undefined,
+      });
       stack.push({ type: 'function', name, line: lineOf(sourceFile, node) });
       ts.forEachChild(node, visit);
       stack.pop();
@@ -120,7 +185,15 @@ function parseTypescriptFile(filePath: string, content: string, context: ParserC
     } else if ((ts.isArrowFunction(node) || ts.isFunctionExpression(node)) && ts.isVariableDeclaration(node.parent) && ts.isIdentifier(node.parent.name)) {
       const name = node.parent.name.text;
       const variableStatement = node.parent.parent?.parent;
-      pushFunction(name, node, node.parameters.map(parameter => parameter.name.getText(sourceFile)).join(', '), !!variableStatement && hasExportModifier(variableStatement));
+      const declarationNode = variableStatement && ts.isVariableStatement(variableStatement) ? variableStatement : undefined;
+      pushFunction(name, node, {
+        signature: node.parameters.map(parameter => parameter.name.getText(sourceFile)).join(', '),
+        exported: !!variableStatement && hasExportModifier(variableStatement),
+        fullSignature: buildFullSignature(sourceFile, node),
+        returnType: getReturnTypeText(sourceFile, node),
+        jsdoc: declarationNode ? getLeadingJsDoc(sourceFile, declarationNode) : undefined,
+        isAsync: hasModifierKind(node, ts.SyntaxKind.AsyncKeyword) || undefined,
+      });
       stack.push({ type: 'function', name, line: lineOf(sourceFile, node) });
       ts.forEachChild(node, visit);
       stack.pop();
@@ -128,7 +201,15 @@ function parseTypescriptFile(filePath: string, content: string, context: ParserC
     } else if (ts.isMethodDeclaration(node)) {
       const name = propertyName(node.name, sourceFile);
       if (name) {
-        pushFunction(name, node, node.parameters.map(parameter => parameter.name.getText(sourceFile)).join(', '));
+        pushFunction(name, node, {
+          signature: node.parameters.map(parameter => parameter.name.getText(sourceFile)).join(', '),
+          fullSignature: buildFullSignature(sourceFile, node),
+          returnType: getReturnTypeText(sourceFile, node),
+          jsdoc: getLeadingJsDoc(sourceFile, node),
+          isAsync: hasModifierKind(node, ts.SyntaxKind.AsyncKeyword) || undefined,
+          isStatic: hasModifierKind(node, ts.SyntaxKind.StaticKeyword) || undefined,
+          visibility: getVisibility(node),
+        });
         stack.push({ type: 'function', name, line: lineOf(sourceFile, node) });
         ts.forEachChild(node, visit);
         stack.pop();
@@ -141,6 +222,7 @@ function parseTypescriptFile(filePath: string, content: string, context: ParserC
         name,
         line: lineOf(sourceFile, node),
         exported: hasExportModifier(node),
+        jsdoc: getLeadingJsDoc(sourceFile, node),
       });
       if (node.heritageClauses) {
         for (const clause of node.heritageClauses) {
@@ -167,6 +249,7 @@ function parseTypescriptFile(filePath: string, content: string, context: ParserC
         name,
         line: lineOf(sourceFile, node),
         exported: hasExportModifier(node),
+        jsdoc: getLeadingJsDoc(sourceFile, node),
       });
       if (node.heritageClauses) {
         for (const clause of node.heritageClauses) {
@@ -190,6 +273,7 @@ function parseTypescriptFile(filePath: string, content: string, context: ParserC
         name: node.name.text,
         line: lineOf(sourceFile, node),
         exported: hasExportModifier(node),
+        jsdoc: getLeadingJsDoc(sourceFile, node),
       });
       return;
     } else if (ts.isEnumDeclaration(node)) {
@@ -198,6 +282,7 @@ function parseTypescriptFile(filePath: string, content: string, context: ParserC
         name: node.name.text,
         line: lineOf(sourceFile, node),
         exported: hasExportModifier(node),
+        jsdoc: getLeadingJsDoc(sourceFile, node),
       });
       return;
     } else if (ts.isVariableStatement(node)) {

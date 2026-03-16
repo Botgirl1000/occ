@@ -71,7 +71,7 @@ import { findByName } from '@cesarandreslopez/occ/code/query';
 import type { CodebaseIndex } from '@cesarandreslopez/occ/code/types';
 ```
 
-Available subpath exports: `./code/build`, `./code/types`, `./code/query`, `./code/discover`.
+Available subpath exports: `./code/build`, `./code/types`, `./code/query`, `./code/discover`, `./code/chunk`, `./code/cache`, `./doc/inspect`, `./doc/types`, `./doc/discover`, `./doc/batch`, `./markdown/convert`, `./structure/extract`, `./structure/types`, `./sheet/inspect`, `./sheet/types`, `./slide/inspect`, `./table/inspect`.
 
 !!! note "TypeScript peer dependency"
     TypeScript (`>=5.0.0`) is an optional peer dependency. If you use the code exploration module programmatically, ensure TypeScript is installed in your project (`npm i typescript`).

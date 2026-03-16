@@ -253,6 +253,19 @@ Available subpath exports:
 | `@cesarandreslopez/occ/code/types` | TypeScript types (`CodebaseIndex`, `CodeNode`, `CodeEdge`, etc.) |
 | `@cesarandreslopez/occ/code/query` | Query functions (`findByName`, `analyzeCalls`, `analyzeDeps`, etc.) |
 | `@cesarandreslopez/occ/code/discover` | `discoverCodeFiles` — file discovery |
+| `@cesarandreslopez/occ/code/chunk` | `chunkCodebase`, `chunkFromIndex` — semantic code chunking |
+| `@cesarandreslopez/occ/code/cache` | Index caching utilities |
+| `@cesarandreslopez/occ/doc/inspect` | `inspectDocument` — document metadata and content extraction |
+| `@cesarandreslopez/occ/doc/types` | Document inspection types |
+| `@cesarandreslopez/occ/doc/discover` | Document file discovery |
+| `@cesarandreslopez/occ/doc/batch` | Batch document inspection |
+| `@cesarandreslopez/occ/markdown/convert` | `documentToMarkdown` — document-to-markdown conversion |
+| `@cesarandreslopez/occ/structure/extract` | `extractFromMarkdown` — heading tree extraction |
+| `@cesarandreslopez/occ/structure/types` | Structure types and helpers |
+| `@cesarandreslopez/occ/sheet/inspect` | `inspectWorkbook` — XLSX workbook inspection |
+| `@cesarandreslopez/occ/sheet/types` | Sheet inspection types |
+| `@cesarandreslopez/occ/slide/inspect` | `inspectPresentation` — presentation inspection |
+| `@cesarandreslopez/occ/table/inspect` | Table extraction from documents |
 
 TypeScript is an optional peer dependency (`>=5.0.0`). If you use the code exploration module programmatically, ensure TypeScript is available in your project.
 
